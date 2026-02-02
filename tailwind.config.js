@@ -8,18 +8,31 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // CAP Brand Colors
+        chalk: '#FFFFF9',
+        ivory: '#F2F3E5',
+        eggshell: '#E1E1CC',
+        battleship: '#7E7C6E',
+        'night-green': '#303029',
+        smoke: '#17150B',
+        olive: '#9B9879',
+        // Primary color mapped to Night Green for compatibility
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#F2F3E5',
+          100: '#E1E1CC',
+          200: '#C5C5B0',
+          300: '#9B9879',
+          400: '#7E7C6E',
+          500: '#303029',
+          600: '#303029',
+          700: '#17150B',
+          800: '#17150B',
+          900: '#17150B',
         },
+      },
+      fontFamily: {
+        mono: ['Azeret Mono', 'ui-monospace', 'monospace'],
+        sans: ['Aktiv Grotesk', 'system-ui', 'sans-serif'],
       },
     },
   },

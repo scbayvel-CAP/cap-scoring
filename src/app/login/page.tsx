@@ -44,23 +44,23 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-ivory">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link href="/" className="text-2xl font-bold text-gray-900">
-            CAP 55 Scoring
+          <Link href="/" className="font-mono font-light text-3xl text-night-green tracking-wider">
+            <span className="text-olive">{'////'}</span>CAP
           </Link>
-          <p className="text-gray-600 mt-2">
+          <p className="text-battleship mt-2 font-mono text-xs uppercase tracking-wider">
             {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-4">
           {error && (
-            <div className={`p-3 rounded-md text-sm ${
+            <div className={`p-3 rounded-md text-sm font-mono ${
               error.includes('Check your email')
-                ? 'bg-green-50 text-green-700'
-                : 'bg-red-50 text-red-700'
+                ? 'bg-olive/20 text-night-green'
+                : 'bg-red-100 text-red-800'
             }`}>
               {error}
             </div>
@@ -100,30 +100,30 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="btn-primary w-full"
+            className="btn-primary w-full font-mono uppercase tracking-wider"
           >
             {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
           </button>
 
           <div className="text-center text-sm">
             {mode === 'login' ? (
-              <p>
+              <p className="text-battleship">
                 Don&apos;t have an account?{' '}
                 <button
                   type="button"
                   onClick={() => setMode('signup')}
-                  className="text-primary-600 hover:underline"
+                  className="text-night-green hover:text-olive font-medium"
                 >
                   Sign up
                 </button>
               </p>
             ) : (
-              <p>
+              <p className="text-battleship">
                 Already have an account?{' '}
                 <button
                   type="button"
                   onClick={() => setMode('login')}
-                  className="text-primary-600 hover:underline"
+                  className="text-night-green hover:text-olive font-medium"
                 >
                   Sign in
                 </button>

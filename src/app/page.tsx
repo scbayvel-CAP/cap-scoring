@@ -11,21 +11,31 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-4">
-      <div className="text-center max-w-md">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">
-          CAP 55 Scoring
-        </h1>
-        <p className="text-lg text-gray-600 mb-8">
-          Real-time scoring system for CAP 55 endurance racing events
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-night-green">
+      <div className="text-center max-w-lg">
+        <div className="mb-8">
+          <h1 className="font-mono font-light text-6xl text-chalk tracking-wider mb-2">
+            <span className="text-olive">{'////'}</span>CAP
+          </h1>
+          <p className="font-mono text-xs text-battleship uppercase tracking-[0.3em]">
+            Time-Capped Endurance Racing
+          </p>
+        </div>
+        <p className="text-lg text-eggshell mb-12">
+          Fixed blocks, clear rules, and measured performance.
         </p>
         <div className="space-y-4">
           <Link
             href="/login"
-            className="btn-primary btn-lg w-full block"
+            className="inline-block bg-olive text-night-green px-8 py-4 font-mono text-sm uppercase tracking-wider hover:bg-eggshell transition-colors"
           >
             Judge Login
           </Link>
+        </div>
+        <div className="mt-16 pt-8 border-t border-battleship/30">
+          <p className="font-mono text-xs text-battleship uppercase tracking-wider">
+            Scoring System
+          </p>
         </div>
       </div>
     </main>

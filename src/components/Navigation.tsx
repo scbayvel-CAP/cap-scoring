@@ -20,17 +20,17 @@ export function Navigation({ eventId, eventName }: NavigationProps) {
   }
 
   return (
-    <nav className="bg-white border-b border-gray-200">
+    <nav className="bg-night-green border-b border-smoke">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="font-bold text-xl text-gray-900">
-              CAP 55
+            <Link href="/dashboard" className="font-mono font-light text-xl text-chalk tracking-wider">
+              <span className="text-olive">{'////'}</span>CAP
             </Link>
             {eventName && (
               <>
-                <span className="text-gray-300">/</span>
-                <span className="text-gray-600">{eventName}</span>
+                <span className="text-battleship">/</span>
+                <span className="text-eggshell text-sm">{eventName}</span>
               </>
             )}
           </div>
@@ -39,34 +39,34 @@ export function Navigation({ eventId, eventName }: NavigationProps) {
               <>
                 <Link
                   href={`/events/${eventId}`}
-                  className="text-sm text-gray-600 hover:text-gray-900"
+                  className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
                 >
                   Overview
                 </Link>
                 <Link
                   href={`/events/${eventId}/athletes`}
-                  className="text-sm text-gray-600 hover:text-gray-900"
+                  className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
                 >
                   Athletes
                 </Link>
                 <Link
                   href={`/events/${eventId}/scoring`}
-                  className="text-sm text-gray-600 hover:text-gray-900"
+                  className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
                 >
                   Scoring
                 </Link>
                 <Link
                   href={`/events/${eventId}/leaderboard`}
-                  className="text-sm text-gray-600 hover:text-gray-900"
+                  className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
                 >
                   Leaderboard
                 </Link>
-                <span className="text-gray-300">|</span>
+                <span className="text-battleship">|</span>
               </>
             )}
             <button
               onClick={handleSignOut}
-              className="text-sm text-gray-600 hover:text-gray-900"
+              className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
             >
               Sign Out
             </button>
