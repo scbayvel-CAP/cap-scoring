@@ -22,27 +22,35 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    @apply inline-flex items-center justify-center rounded-md px-4 py-3 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none;
+    min-height: 44px; /* WCAG touch target minimum */
   }
 
   .btn-primary {
-    @apply btn bg-night-green text-chalk hover:bg-smoke focus:ring-olive;
+    @apply btn bg-night-green text-chalk hover:bg-smoke focus:ring-olive active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply btn bg-eggshell text-night-green hover:bg-battleship hover:text-chalk focus:ring-olive;
+    @apply btn bg-eggshell text-night-green hover:bg-battleship hover:text-chalk focus:ring-olive active:scale-[0.98];
   }
 
   .btn-danger {
-    @apply btn bg-red-700 text-white hover:bg-red-800 focus:ring-red-500;
+    @apply btn bg-red-700 text-white hover:bg-red-800 focus:ring-red-500 active:scale-[0.98];
   }
 
   .btn-lg {
-    @apply px-6 py-3 text-base;
+    @apply px-6 py-4 text-base;
+    min-height: 52px;
   }
 
   .input {
-    @apply block w-full rounded-md border border-battleship px-3 py-2 text-sm placeholder:text-battleship focus:border-night-green focus:outline-none focus:ring-1 focus:ring-olive disabled:bg-eggshell disabled:cursor-not-allowed bg-chalk;
+    @apply block w-full rounded-md border border-battleship px-4 py-3 text-base placeholder:text-battleship focus:border-night-green focus:outline-none focus:ring-2 focus:ring-olive disabled:bg-eggshell disabled:cursor-not-allowed bg-chalk;
+    min-height: 48px; /* Touch-friendly input height */
+  }
+
+  .input-lg {
+    @apply input text-lg py-4;
+    min-height: 56px;
   }
 
   .label {
@@ -56,7 +64,8 @@
   }
 
   .select {
-    @apply block w-full rounded-md border border-battleship px-3 py-2 text-sm focus:border-night-green focus:outline-none focus:ring-1 focus:ring-olive bg-chalk;
+    @apply block w-full rounded-md border border-battleship px-4 py-3 text-base focus:border-night-green focus:outline-none focus:ring-2 focus:ring-olive bg-chalk;
+    min-height: 48px; /* Touch-friendly select height */
   }
 
   .table-th {
@@ -74,5 +83,30 @@
 
   .table-td {
     @apply px-4 py-3 text-sm text-night-green;
+  }
+
+  /* Outdoor/bright light optimized card */
+  .card-prominent {
+    @apply bg-chalk rounded-xl shadow-md border-2 border-eggshell p-5;
+  }
+
+  /* High contrast text for outdoor visibility */
+  .text-outdoor {
+    @apply text-night-green;
+    text-shadow: 0 0 1px rgba(255, 255, 255, 0.5);
+  }
+
+  /* Station indicator badge */
+  .station-badge {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-full text-base font-semibold;
+  }
+
+  .station-badge-locked {
+    @apply station-badge bg-night-green text-chalk;
+  }
+
+  /* Success indicator for saved scores */
+  .saved-indicator {
+    @apply inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-green-100 text-green-700 text-sm font-semibold;
   }
 }

@@ -1,0 +1,39 @@
+{
+  "name": "CAP 55 Scoring",
+  "short_name": "CAP 55",
+  "description": "Real-time scoring system for CAP 55 endurance racing events",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#303029",
+  "theme_color": "#303029",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["sports", "utilities"],
+  "prefer_related_applications": false
+}

@@ -7,6 +7,7 @@ interface HeatSelectorProps {
   raceType: 'singles' | 'doubles'
   heatNumber: number
   station: number
+  stationLocked?: boolean
   onRaceTypeChange: (type: 'singles' | 'doubles') => void
   onHeatChange: (heat: number) => void
   onStationChange: (station: number) => void
@@ -16,6 +17,7 @@ export function HeatSelector({
   raceType,
   heatNumber,
   station,
+  stationLocked = false,
   onRaceTypeChange,
   onHeatChange,
   onStationChange,
@@ -46,19 +48,21 @@ export function HeatSelector({
             ))}
           </Select>
         </div>
-        <div className="flex-1 min-w-[150px]">
-          <Select
-            label="Station"
-            value={station}
-            onChange={(e) => onStationChange(Number(e.target.value))}
-          >
-            {getStationNumbers().map((s) => (
-              <option key={s} value={s}>
-                {getStationName(s)}
-              </option>
-            ))}
-          </Select>
-        </div>
+        {!stationLocked && (
+          <div className="flex-1 min-w-[150px]">
+            <Select
+              label="Station"
+              value={station}
+              onChange={(e) => onStationChange(Number(e.target.value))}
+            >
+              {getStationNumbers().map((s) => (
+                <option key={s} value={s}>
+                  {getStationName(s)}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
       </div>
     </div>
   )

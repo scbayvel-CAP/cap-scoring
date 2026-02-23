@@ -1,0 +1,11 @@
+bib_number,heat_number,first_name,last_name,gender,age_category
+101,1,John,Smith,male,30-34
+102,1,Jane,Doe,female,25-29
+103,1,Michael,Johnson,male,40-44
+104,2,Sarah,Williams,female,35-39
+105,2,David,Brown,male,50-54
+106,2,Emily,Davis,female,18-24
+107,3,Robert,Miller,male,45-49
+108,3,Jennifer,Wilson,female,55-59
+109,3,William,Moore,male,60-64
+110,3,Lisa,Taylor,female,65+

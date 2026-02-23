@@ -124,6 +124,38 @@ export type Database = {
           }
         ]
       }
+      profiles: {
+        Row: {
+          id: string
+          role: 'admin' | 'judge'
+          email: string | null
+          assigned_station: number | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          role?: 'admin' | 'judge'
+          email?: string | null
+          assigned_station?: number | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          role?: 'admin' | 'judge'
+          email?: string | null
+          assigned_station?: number | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'profiles_id_fkey'
+            columns: ['id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       scores: {
         Row: {
           id: string
@@ -159,9 +191,71 @@ export type Database = {
           }
         ]
       }
+      score_audit_log: {
+        Row: {
+          id: string
+          score_id: string | null
+          athlete_id: string
+          event_id: string
+          station: number
+          action: 'created' | 'updated' | 'deleted'
+          old_value: number | null
+          new_value: number | null
+          changed_by: string | null
+          changed_at: string
+          metadata: Record<string, unknown>
+        }
+        Insert: {
+          id?: string
+          score_id?: string | null
+          athlete_id: string
+          event_id: string
+          station: number
+          action: 'created' | 'updated' | 'deleted'
+          old_value?: number | null
+          new_value?: number | null
+          changed_by?: string | null
+          changed_at?: string
+          metadata?: Record<string, unknown>
+        }
+        Update: {
+          id?: string
+          score_id?: string | null
+          athlete_id?: string
+          event_id?: string
+          station?: number
+          action?: 'created' | 'updated' | 'deleted'
+          old_value?: number | null
+          new_value?: number | null
+          changed_by?: string | null
+          changed_at?: string
+          metadata?: Record<string, unknown>
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'score_audit_log_athlete_id_fkey'
+            columns: ['athlete_id']
+            isOneToOne: false
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'score_audit_log_event_id_fkey'
+            columns: ['event_id']
+            isOneToOne: false
+            referencedRelation: 'events'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      is_admin: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }
@@ -174,6 +268,11 @@ export type Athlete = Database['public']['Tables']['athletes']['Row']
 export type AthleteInsert = Database['public']['Tables']['athletes']['Insert']
 export type Score = Database['public']['Tables']['scores']['Row']
 export type ScoreInsert = Database['public']['Tables']['scores']['Insert']
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type UserRole = Profile['role']
+export type ScoreAuditLog = Database['public']['Tables']['score_audit_log']['Row']
+export type ScoreAuditLogInsert = Database['public']['Tables']['score_audit_log']['Insert']
+export type AuditAction = ScoreAuditLog['action']
 
 // Extended types with relations
 export type AthleteWithScores = Athlete & {

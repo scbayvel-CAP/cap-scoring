@@ -42,7 +42,7 @@ export async function updateSession(request: NextRequest) {
   )
 
   // Protected routes - redirect to login if not authenticated
-  const protectedPaths = ['/dashboard', '/events']
+  const protectedPaths = ['/dashboard', '/events', '/admin']
   const isProtectedPath = protectedPaths.some(path =>
     request.nextUrl.pathname.startsWith(path)
   )
@@ -58,6 +58,26 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
+  }
+
+  // Admin-only routes — check role for authenticated users
+  const adminOnlyPaths = ['/events/new', '/admin']
+  const isAdminRoute = adminOnlyPaths.some(path =>
+    request.nextUrl.pathname === path || request.nextUrl.pathname.startsWith(path + '/')
+  )
+
+  if (isAdminRoute && user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

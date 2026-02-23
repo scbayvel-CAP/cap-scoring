@@ -4,9 +4,18 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import { Navigation } from '@/components/Navigation'
 import { Leaderboard } from '@/components/Leaderboard'
+import { PageErrorBoundary } from '@/components/ErrorBoundary'
+import { Skeleton, SkeletonLeaderboard } from '@/components/Skeleton'
 import { AGE_CATEGORIES } from '@/lib/supabase/types'
 import { useAthletes } from '@/hooks/useAthletes'
 import { useEvent } from '@/hooks/useEvent'
+import { useRole } from '@/hooks/useRole'
+import {
+  generateLeaderboardCSV,
+  generateLeaderboardPDF,
+  downloadCSV,
+  generateExportFilename,
+} from '@/lib/csv/exporter'
 
 export default function LeaderboardPage() {
   const params = useParams()
@@ -18,6 +27,7 @@ export default function LeaderboardPage() {
     includeScores: true,
     realtime: true,
   })
+  const { isAdmin } = useRole()
 
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
@@ -33,6 +43,33 @@ export default function LeaderboardPage() {
       setLastUpdate(new Date())
     }
   }, [athletes])
+
+  const handleExportCSV = () => {
+    if (!event || filteredAthletes.length === 0) return
+
+    const csvContent = generateLeaderboardCSV(filteredAthletes, {
+      event,
+      raceType,
+      filters: raceType === 'singles'
+        ? { gender, ageCategory }
+        : { doublesCategory },
+    })
+
+    const filename = generateExportFilename(event.name, raceType, 'csv')
+    downloadCSV(csvContent, filename)
+  }
+
+  const handleExportPDF = () => {
+    if (!event || filteredAthletes.length === 0) return
+
+    generateLeaderboardPDF(filteredAthletes, {
+      event,
+      raceType,
+      filters: raceType === 'singles'
+        ? { gender, ageCategory }
+        : { doublesCategory },
+    })
+  }
 
   // Filter athletes
   const filteredAthletes = athletes.filter((athlete) => {
@@ -53,7 +90,37 @@ export default function LeaderboardPage() {
       <div>
         <Navigation />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-gray-500">Loading...</p>
+          <div className="flex justify-between items-center mb-6">
+            <Skeleton className="h-8 w-40" />
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-9 w-16" />
+              <Skeleton className="h-9 w-16" />
+            </div>
+          </div>
+
+          <div className="card mb-6">
+            <div className="flex flex-wrap gap-4 items-end">
+              <div>
+                <Skeleton className="h-4 w-20 mb-2" />
+                <div className="flex space-x-2">
+                  <Skeleton className="h-10 w-20" />
+                  <Skeleton className="h-10 w-20" />
+                </div>
+              </div>
+              <div>
+                <Skeleton className="h-4 w-16 mb-2" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+              <div>
+                <Skeleton className="h-4 w-24 mb-2" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          </div>
+
+          <Skeleton className="h-4 w-32 mb-4" />
+          <SkeletonLeaderboard rows={10} />
         </main>
       </div>
     )
@@ -62,14 +129,63 @@ export default function LeaderboardPage() {
   return (
     <div>
       <Navigation eventId={eventId} eventName={event?.name} />
+      <PageErrorBoundary pageName="Leaderboard">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Leaderboard</h1>
-          {lastUpdate && (
-            <span className="text-sm text-gray-500">
-              Last updated: {lastUpdate.toLocaleTimeString()}
-            </span>
-          )}
+          <div className="flex items-center gap-4">
+            {lastUpdate && (
+              <span className="text-sm text-gray-500">
+                Last updated: {lastUpdate.toLocaleTimeString()}
+              </span>
+            )}
+            {isAdmin && (
+              <>
+                <button
+                  onClick={handleExportCSV}
+                  disabled={filteredAthletes.length === 0}
+                  className="btn-secondary text-sm flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                    />
+                  </svg>
+                  CSV
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  disabled={filteredAthletes.length === 0}
+                  className="btn-secondary text-sm flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                    />
+                  </svg>
+                  PDF
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         <div className="card mb-6">
@@ -156,6 +272,7 @@ export default function LeaderboardPage() {
 
         <Leaderboard athletes={filteredAthletes} />
       </main>
+      </PageErrorBoundary>
     </div>
   )
 }

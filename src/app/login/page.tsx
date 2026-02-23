@@ -10,7 +10,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
   const router = useRouter()
   const supabase = createClient()
 
@@ -20,22 +19,13 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (error) throw error
-        router.push('/dashboard')
-        router.refresh()
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        })
-        if (error) throw error
-        setError('Check your email for the confirmation link.')
-      }
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      if (error) throw error
+      router.push('/dashboard')
+      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -51,17 +41,13 @@ export default function LoginPage() {
             <span className="text-olive">{'////'}</span>CAP
           </Link>
           <p className="text-battleship mt-2 font-mono text-xs uppercase tracking-wider">
-            {mode === 'login' ? 'Sign in to your account' : 'Create a new account'}
+            Sign in to your account
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-4">
           {error && (
-            <div className={`p-3 rounded-md text-sm font-mono ${
-              error.includes('Check your email')
-                ? 'bg-olive/20 text-night-green'
-                : 'bg-red-100 text-red-800'
-            }`}>
+            <div className="p-3 rounded-md text-sm font-mono bg-red-100 text-red-800">
               {error}
             </div>
           )}
@@ -102,34 +88,8 @@ export default function LoginPage() {
             disabled={loading}
             className="btn-primary w-full font-mono uppercase tracking-wider"
           >
-            {loading ? 'Please wait...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
+            {loading ? 'Please wait...' : 'Sign In'}
           </button>
-
-          <div className="text-center text-sm">
-            {mode === 'login' ? (
-              <p className="text-battleship">
-                Don&apos;t have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('signup')}
-                  className="text-night-green hover:text-olive font-medium"
-                >
-                  Sign up
-                </button>
-              </p>
-            ) : (
-              <p className="text-battleship">
-                Already have an account?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="text-night-green hover:text-olive font-medium"
-                >
-                  Sign in
-                </button>
-              </p>
-            )}
-          </div>
         </form>
       </div>
     </main>

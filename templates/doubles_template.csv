@@ -1,0 +1,9 @@
+bib_number,heat_number,team_name,doubles_category,partner1_first_name,partner1_last_name,partner1_gender,partner2_first_name,partner2_last_name,partner2_gender
+201,1,Team Alpha,mixed,John,Smith,male,Jane,Doe,female
+202,1,Power Duo,men,Michael,Johnson,male,David,Brown,male
+203,1,Dynamic Pair,women,Sarah,Williams,female,Emily,Davis,female
+204,2,Thunder Force,mixed,Robert,Miller,male,Jennifer,Wilson,female
+205,2,Iron Brothers,men,William,Moore,male,James,Taylor,male
+206,2,Speed Sisters,women,Lisa,Anderson,female,Karen,Thomas,female
+207,3,Victory Team,mixed,Chris,Jackson,male,Amanda,White,female
+208,3,Strong Bond,men,Daniel,Harris,male,Matthew,Martin,male

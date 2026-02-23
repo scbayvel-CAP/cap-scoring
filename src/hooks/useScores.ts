@@ -10,7 +10,7 @@ import {
   syncPendingScores,
 } from '@/lib/offline/sync'
 import { LocalScore, isIndexedDBAvailable } from '@/lib/offline/db'
-import { getScores as fetchScores, upsertScores as saveScores } from '@/lib/supabase/queries'
+import { getScores as fetchScores, upsertScores as saveScores, deleteScores as removeScores } from '@/lib/supabase/queries'
 
 interface UseScoresOptions {
   athleteIds: string[]
@@ -236,6 +236,28 @@ export function useScores({ athleteIds, realtime = false, localFirst = true }: U
     return scores.filter((s) => s.athlete_id === athleteId)
   }
 
+  // Delete scores for athletes at a specific station
+  const deleteScores = async (athleteIdsToDelete: string[], station: number) => {
+    // Optimistically remove from local state
+    setScores((prev) =>
+      prev.filter(
+        (s) => !(athleteIdsToDelete.includes(s.athlete_id) && s.station === station)
+      )
+    )
+
+    // Delete from server
+    try {
+      await removeScores(supabase, athleteIdsToDelete, station)
+      // Reload to ensure consistency
+      await loadScores()
+    } catch (e) {
+      // If deletion fails, reload to restore state
+      console.error('Failed to delete scores:', e)
+      await loadScores()
+      throw e
+    }
+  }
+
   return {
     scores,
     loading,
@@ -243,6 +265,7 @@ export function useScores({ athleteIds, realtime = false, localFirst = true }: U
     isOffline,
     refresh: loadScores,
     upsertScores,
+    deleteScores,
     getScoreForAthlete,
     getScoresForAthlete,
   }

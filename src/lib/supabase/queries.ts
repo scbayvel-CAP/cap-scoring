@@ -1,4 +1,4 @@
-import { Event, Athlete, Score, AthleteWithScores, AthleteInsert, ScoreInsert } from './types'
+import { Event, Athlete, Score, AthleteWithScores, AthleteInsert, ScoreInsert, ScoreAuditLog, ScoreAuditLogInsert, AuditAction } from './types'
 import { createClient } from './client'
 
 type SupabaseClient = ReturnType<typeof createClient>
@@ -115,6 +115,87 @@ export async function deleteAthlete(
   if (error) throw error
 }
 
+// Bulk insert athletes - batch insert in groups of 50
+export interface BulkInsertResult {
+  successCount: number
+  failureCount: number
+  errors: Array<{
+    index: number
+    bibNumber: string
+    error: string
+  }>
+}
+
+export async function bulkInsertAthletes(
+  supabase: SupabaseClient,
+  athletes: AthleteInsert[]
+): Promise<BulkInsertResult> {
+  const BATCH_SIZE = 50
+  const result: BulkInsertResult = {
+    successCount: 0,
+    failureCount: 0,
+    errors: [],
+  }
+
+  // Process in batches
+  for (let i = 0; i < athletes.length; i += BATCH_SIZE) {
+    const batch = athletes.slice(i, i + BATCH_SIZE)
+
+    try {
+      const { data, error } = await supabase
+        .from('athletes')
+        .insert(batch as never[])
+        .select()
+
+      if (error) {
+        // If batch fails, try inserting individually to identify which rows failed
+        for (let j = 0; j < batch.length; j++) {
+          const athlete = batch[j]
+          try {
+            await supabase
+              .from('athletes')
+              .insert(athlete as never)
+              .select()
+              .single()
+            result.successCount++
+          } catch (individualError) {
+            result.failureCount++
+            result.errors.push({
+              index: i + j,
+              bibNumber: athlete.bib_number,
+              error: individualError instanceof Error ? individualError.message : 'Unknown error',
+            })
+          }
+        }
+      } else {
+        result.successCount += data?.length || batch.length
+      }
+    } catch (batchError) {
+      // If entire batch throws, try individual inserts
+      for (let j = 0; j < batch.length; j++) {
+        const athlete = batch[j]
+        try {
+          await supabase
+            .from('athletes')
+            .insert(athlete as never)
+            .select()
+            .single()
+          result.successCount++
+        } catch (individualError) {
+          result.failureCount++
+          result.errors.push({
+            index: i + j,
+            bibNumber: athlete.bib_number,
+            error: individualError instanceof Error ? individualError.message : 'Unknown error',
+          })
+        }
+      }
+    }
+  }
+
+  return result
+}
+
 // Score queries
 export async function getScores(
   supabase: SupabaseClient,
@@ -142,4 +223,139 @@ export async function upsertScores(
 
   if (result.error) throw result.error
   return result.data || []
+}
+
+export async function deleteScores(
+  supabase: SupabaseClient,
+  athleteIds: string[],
+  station: number
+): Promise<void> {
+  if (athleteIds.length === 0) return
+
+  const { error } = await supabase
+    .from('scores')
+    .delete()
+    .in('athlete_id', athleteIds)
+    .eq('station', station)
+
+  if (error) throw error
+}
+
+// Audit Log queries
+export async function logScoreChange(
+  supabase: SupabaseClient,
+  entry: ScoreAuditLogInsert
+): Promise<void> {
+  const { error } = await supabase
+    .from('score_audit_log')
+    .insert(entry as never)
+
+  if (error) {
+    console.error('Failed to log score change:', error)
+    // Don't throw - audit logging shouldn't break the main operation
+  }
+}
+
+export async function logScoreChanges(
+  supabase: SupabaseClient,
+  entries: ScoreAuditLogInsert[]
+): Promise<void> {
+  if (entries.length === 0) return
+
+  const { error } = await supabase
+    .from('score_audit_log')
+    .insert(entries as never[])
+
+  if (error) {
+    console.error('Failed to log score changes:', error)
+  }
+}
+
+export interface GetAuditLogOptions {
+  eventId?: string
+  athleteId?: string
+  station?: number
+  changedBy?: string
+  limit?: number
+  offset?: number
+}
+
+export interface AuditLogEntry extends ScoreAuditLog {
+  athlete?: Athlete
+  changer_email?: string
+}
+
+export async function getAuditLog(
+  supabase: SupabaseClient,
+  options: GetAuditLogOptions = {}
+): Promise<AuditLogEntry[]> {
+  const { eventId, athleteId, station, changedBy, limit = 100, offset = 0 } = options
+
+  let query = supabase
+    .from('score_audit_log')
+    .select(`
+      *,
+      athlete:athletes(id, bib_number, first_name, last_name, team_name, race_type),
+      changer:profiles!score_audit_log_changed_by_fkey(email)
+    `)
+    .order('changed_at', { ascending: false })
+    .range(offset, offset + limit - 1)
+
+  if (eventId) {
+    query = query.eq('event_id', eventId)
+  }
+
+  if (athleteId) {
+    query = query.eq('athlete_id', athleteId)
+  }
+
+  if (station) {
+    query = query.eq('station', station)
+  }
+
+  if (changedBy) {
+    query = query.eq('changed_by', changedBy)
+  }
+
+  const result = await query as unknown as QueryResult<AuditLogEntry[]>
+
+  if (result.error) throw result.error
+
+  // Flatten the changer email
+  return (result.data || []).map((entry) => ({
+    ...entry,
+    changer_email: (entry as any).changer?.email || null,
+  }))
+}
+
+export async function getAuditLogCount(
+  supabase: SupabaseClient,
+  options: GetAuditLogOptions = {}
+): Promise<number> {
+  const { eventId, athleteId, station, changedBy } = options
+
+  let query = supabase
+    .from('score_audit_log')
+    .select('id', { count: 'exact', head: true })
+
+  if (eventId) {
+    query = query.eq('event_id', eventId)
+  }
+
+  if (athleteId) {
+    query = query.eq('athlete_id', athleteId)
+  }
+
+  if (station) {
+    query = query.eq('station', station)
+  }
+
+  if (changedBy) {
+    query = query.eq('changed_by', changedBy)
+  }
+
+  const { count, error } = await query
+
+  if (error) throw error
+  return count || 0
 }

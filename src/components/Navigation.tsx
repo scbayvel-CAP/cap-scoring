@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useRole } from '@/hooks/useRole'
 
 interface NavigationProps {
   eventId?: string
@@ -12,6 +13,7 @@ interface NavigationProps {
 export function Navigation({ eventId, eventName }: NavigationProps) {
   const router = useRouter()
   const supabase = createClient()
+  const { role, loading, isAdmin } = useRole()
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -43,12 +45,14 @@ export function Navigation({ eventId, eventName }: NavigationProps) {
                 >
                   Overview
                 </Link>
-                <Link
-                  href={`/events/${eventId}/athletes`}
-                  className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
-                >
-                  Athletes
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href={`/events/${eventId}/athletes`}
+                    className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
+                  >
+                    Athletes
+                  </Link>
+                )}
                 <Link
                   href={`/events/${eventId}/scoring`}
                   className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
@@ -63,6 +67,22 @@ export function Navigation({ eventId, eventName }: NavigationProps) {
                 </Link>
                 <span className="text-battleship">|</span>
               </>
+            )}
+            {isAdmin && (
+              <>
+                <Link
+                  href="/admin/judges"
+                  className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"
+                >
+                  Judges
+                </Link>
+                <span className="text-battleship">|</span>
+              </>
+            )}
+            {!loading && role && (
+              <span className="text-xs font-mono px-2 py-0.5 rounded bg-olive/30 text-chalk uppercase tracking-wider">
+                {role}
+              </span>
             )}
             <button
               onClick={handleSignOut}

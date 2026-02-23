@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Athlete, Score } from '@/lib/supabase/types'
 import { getDisplayName, getScoreForStation } from '@/lib/utils'
 
@@ -9,13 +9,16 @@ interface ScoreEntryProps {
   station: number
   scores: Score[]
   onChange: (athleteId: string, distance: number | null) => void
+  onEnterPress?: () => void // Called when Enter is pressed to advance to next athlete
 }
 
-export function ScoreEntry({ athlete, station, scores, onChange }: ScoreEntryProps) {
+export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }: ScoreEntryProps) {
   const existingScore = getScoreForStation(scores, station)
   const [value, setValue] = useState<string>(
     existingScore ? existingScore.distance_meters.toString() : ''
   )
+  const [isFocused, setIsFocused] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setValue(existingScore ? existingScore.distance_meters.toString() : '')
@@ -35,31 +38,73 @@ export function ScoreEntry({ athlete, station, scores, onChange }: ScoreEntryPro
     }
   }
 
+  const handleCardClick = () => {
+    inputRef.current?.focus()
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && onEnterPress) {
+      e.preventDefault()
+      onEnterPress()
+    }
+  }
+
+  const hasChange = value !== '' && value !== (existingScore?.distance_meters?.toString() || '')
+
   return (
-    <div className="card">
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="text-lg font-medium text-gray-700">
-            #{athlete.bib_number}
+    <div
+      className={`card cursor-pointer transition-all ${
+        isFocused ? 'ring-2 ring-olive border-night-green' : ''
+      } ${existingScore ? 'border-l-4 border-l-green-500' : ''}`}
+      onClick={handleCardClick}
+    >
+      {/* Athlete info row */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-night-green text-chalk font-bold text-lg">
+            {athlete.bib_number}
           </span>
-          <span className="ml-3 text-gray-900">
+          <span className="text-lg font-medium text-night-green">
             {getDisplayName(athlete)}
           </span>
         </div>
-        <div className="flex items-center space-x-2">
+        {existingScore && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-medium">
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+            Saved
+          </span>
+        )}
+      </div>
+
+      {/* Score input row */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
           <input
+            ref={inputRef}
             type="number"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={value}
             onChange={handleChange}
-            className="input w-32 text-right"
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            onKeyDown={handleKeyDown}
+            className="input-lg w-full text-right pr-12 font-mono tabular-nums"
             placeholder="0"
             min="0"
+            enterKeyHint="next"
           />
-          <span className="text-gray-500">m</span>
-          {existingScore && (
-            <span className="text-xs text-green-600 ml-2">Saved</span>
-          )}
+          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-battleship font-medium">
+            m
+          </span>
         </div>
+        {hasChange && (
+          <span className="flex-shrink-0 text-sm text-olive font-medium">
+            Changed
+          </span>
+        )}
       </div>
     </div>
   )

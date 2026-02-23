@@ -1,20 +1,26 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { Navigation } from '@/components/Navigation'
 import { AthleteForm } from '@/components/AthleteForm'
 import { AthleteList } from '@/components/AthleteList'
 import { AthleteQRModal } from '@/components/AthleteQRModal'
+import CSVImportModal from '@/components/CSVImportModal'
+import { PageErrorBoundary } from '@/components/ErrorBoundary'
+import { Skeleton, SkeletonAthleteList } from '@/components/Skeleton'
 import { Athlete } from '@/lib/supabase/types'
 import { getHeatNumbers } from '@/lib/utils'
 import { useAthletes } from '@/hooks/useAthletes'
 import { useEvent } from '@/hooks/useEvent'
+import { useRole } from '@/hooks/useRole'
 
 export default function AthletesPage() {
   const params = useParams()
+  const router = useRouter()
   const eventId = params.eventId as string
 
+  const { isAdmin, loading: roleLoading } = useRole()
   const { event } = useEvent(eventId)
   const { athletes, loading, deleteAthlete, refresh } = useAthletes({
     eventId,
@@ -24,9 +30,17 @@ export default function AthletesPage() {
   const [showForm, setShowForm] = useState(false)
   const [editingAthlete, setEditingAthlete] = useState<Athlete | undefined>()
   const [qrAthlete, setQrAthlete] = useState<Athlete | undefined>()
+  const [showImportModal, setShowImportModal] = useState(false)
 
   const [filterRaceType, setFilterRaceType] = useState<'all' | 'singles' | 'doubles'>('all')
   const [filterHeat, setFilterHeat] = useState<number | 'all'>('all')
+
+  // Redirect judges to event overview
+  useEffect(() => {
+    if (!roleLoading && !isAdmin) {
+      router.push(`/events/${eventId}`)
+    }
+  }, [roleLoading, isAdmin, router, eventId])
 
   const handleSave = () => {
     setShowForm(false)
@@ -62,29 +76,77 @@ export default function AthletesPage() {
     return true
   })
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div>
         <Navigation />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-gray-500">Loading...</p>
+          <div className="flex justify-between items-center mb-8">
+            <Skeleton className="h-8 w-32" />
+            <div className="flex gap-3">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-28" />
+            </div>
+          </div>
+
+          <div className="card mb-6">
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <Skeleton className="h-4 w-20 mb-2" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+              <div>
+                <Skeleton className="h-4 w-12 mb-2" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+            </div>
+          </div>
+
+          <Skeleton className="h-4 w-48 mb-4" />
+          <SkeletonAthleteList count={8} />
         </main>
       </div>
     )
   }
 
+  if (!isAdmin) {
+    return null
+  }
+
   return (
     <div>
       <Navigation eventId={eventId} eventName={event?.name} />
+      <PageErrorBoundary pageName="Athletes">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Athletes</h1>
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn-primary"
-          >
-            Add Athlete
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="btn-secondary flex items-center gap-2"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                />
+              </svg>
+              Import CSV
+            </button>
+            <button
+              onClick={() => setShowForm(true)}
+              className="btn-primary"
+            >
+              Add Athlete
+            </button>
+          </div>
         </div>
 
         {showForm && (
@@ -153,7 +215,20 @@ export default function AthletesPage() {
             onClose={() => setQrAthlete(undefined)}
           />
         )}
+
+        {showImportModal && (
+          <CSVImportModal
+            eventId={eventId}
+            existingBibs={new Set(athletes.map((a) => a.bib_number))}
+            onClose={() => setShowImportModal(false)}
+            onImportComplete={() => {
+              setShowImportModal(false)
+              refresh()
+            }}
+          />
+        )}
       </main>
+      </PageErrorBoundary>
     </div>
   )
 }

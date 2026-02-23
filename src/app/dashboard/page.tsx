@@ -2,9 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { Navigation } from '@/components/Navigation'
 import Link from 'next/link'
 import { Event } from '@/lib/supabase/types'
+import { getUserRole } from '@/lib/auth/role'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
+  const userRole = await getUserRole()
+  const isAdmin = userRole?.role === 'admin'
 
   const { data: events, error } = await supabase
     .from('events')
@@ -39,9 +42,18 @@ export default async function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Events</h1>
-          <Link href="/events/new" className="btn-primary">
-            Create Event
-          </Link>
+          <div className="flex gap-3">
+            {isAdmin && (
+              <Link href="/admin/judges" className="btn-secondary">
+                Manage Judges
+              </Link>
+            )}
+            {isAdmin && (
+              <Link href="/events/new" className="btn-primary">
+                Create Event
+              </Link>
+            )}
+          </div>
         </div>
 
         {error && (
@@ -53,9 +65,11 @@ export default async function DashboardPage() {
         {events && events.length === 0 && (
           <div className="card text-center py-12">
             <p className="text-gray-500 mb-4">No events yet</p>
-            <Link href="/events/new" className="btn-primary">
-              Create Your First Event
-            </Link>
+            {isAdmin && (
+              <Link href="/events/new" className="btn-primary">
+                Create Your First Event
+              </Link>
+            )}
           </div>
         )}
 

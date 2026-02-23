@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { EventStatusUpdater } from '@/components/EventStatusUpdater'
 import { Event, Athlete } from '@/lib/supabase/types'
+import { getUserRole } from '@/lib/auth/role'
 
 interface PageProps {
   params: Promise<{ eventId: string }>
@@ -12,6 +13,8 @@ interface PageProps {
 export default async function EventPage({ params }: PageProps) {
   const { eventId } = await params
   const supabase = await createClient()
+  const userRole = await getUserRole()
+  const isAdmin = userRole?.role === 'admin'
 
   const { data: event, error } = await supabase
     .from('events')
@@ -68,7 +71,9 @@ export default async function EventPage({ params }: PageProps) {
                 {event.location && ` • ${event.location}`}
               </p>
             </div>
-            <EventStatusUpdater eventId={event.id} currentStatus={event.status} />
+            {isAdmin && (
+              <EventStatusUpdater eventId={event.id} currentStatus={event.status} />
+            )}
           </div>
         </div>
 
@@ -96,15 +101,17 @@ export default async function EventPage({ params }: PageProps) {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6">
-          <Link
-            href={`/events/${event.id}/athletes`}
-            className="card hover:shadow-md transition-shadow"
-          >
-            <h2 className="text-lg font-semibold text-gray-900">Manage Athletes</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Add, edit, and assign athletes to heats
-            </p>
-          </Link>
+          {isAdmin && (
+            <Link
+              href={`/events/${event.id}/athletes`}
+              className="card hover:shadow-md transition-shadow"
+            >
+              <h2 className="text-lg font-semibold text-gray-900">Manage Athletes</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Add, edit, and assign athletes to heats
+              </p>
+            </Link>
+          )}
           <Link
             href={`/events/${event.id}/scoring`}
             className="card hover:shadow-md transition-shadow"
@@ -123,6 +130,17 @@ export default async function EventPage({ params }: PageProps) {
               See rankings and live updates
             </p>
           </Link>
+          {isAdmin && (
+            <Link
+              href={`/events/${event.id}/audit-log`}
+              className="card hover:shadow-md transition-shadow"
+            >
+              <h2 className="text-lg font-semibold text-gray-900">Audit Log</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Track all score changes and edits
+              </p>
+            </Link>
+          )}
         </div>
       </main>
     </div>
