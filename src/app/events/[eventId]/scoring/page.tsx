@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Navigation } from '@/components/Navigation'
+import { JudgeNavigation } from '@/components/JudgeNavigation'
 import { HeatSelector } from '@/components/HeatSelector'
 import { ScoreEntry } from '@/components/ScoreEntry'
 import { UndoToast } from '@/components/UndoToast'
@@ -317,7 +318,7 @@ export default function ScoringPage() {
   if ((loading && !event) || roleLoading) {
     return (
       <div>
-        <Navigation />
+        {isAdmin ? <Navigation /> : <JudgeNavigation />}
         <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Skeleton className="h-8 w-48 mb-6" />
 
@@ -349,7 +350,15 @@ export default function ScoringPage() {
 
   return (
     <div>
-      <Navigation eventId={eventId} eventName={event?.name} />
+      {isAdmin ? (
+        <Navigation eventId={eventId} eventName={event?.name} />
+      ) : (
+        <JudgeNavigation
+          eventName={event?.name}
+          stationName={getStationName(effectiveStation)}
+          showBackToEvents
+        />
+      )}
       <PageErrorBoundary pageName="Scoring">
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Page header with station indicator */}
