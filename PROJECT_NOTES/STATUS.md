@@ -43,6 +43,7 @@ When real event data is available:
 - 9 user accounts configured (1 admin + 8 judges, 2 per station)
 - Role-based access (admin can manage events/athletes, judges can only score)
 - **Station locking** - Judges are locked to their assigned station (prevents wrong-station errors)
+- **Simplified judge flow** - Login → Select Event → Scoring (no other pages visible)
 - Offline score entry with background sync
 - Real-time leaderboard updates
 - Public leaderboard for athletes (no login required)
@@ -222,6 +223,15 @@ npm run setup-accounts   # Reset/recreate judge accounts
 ---
 
 ## Session Log
+
+### 2026-02-23: Simplified Judge Flow
+- Created dedicated `JudgeNavigation` component with minimal UI
+- Judges now see streamlined event selection (only active events shown)
+- Tapping event goes directly to scoring page (not event overview)
+- Judge navigation shows: back arrow, event name, station badge, sign out
+- No access to Overview, Athletes, Leaderboard pages for judges
+- Admin experience unchanged
+- Fixed station assignment in database (ran SQL to correct judge profiles)
 
 ### 2026-02-23: Phase 7 - Scoring UI/UX Polish
 - Complete mobile UX overhaul of the judge scoring interface
