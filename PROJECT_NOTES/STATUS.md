@@ -28,6 +28,7 @@ When real event data is available:
 - ✅ **Undo toast** - Larger buttons, better positioning, progress bar at top
 - ✅ **Typography** - Larger text sizes optimized for outdoor/bright light visibility
 - ✅ **Range modal** - Stacked buttons on mobile for better touch targets
+- ✅ **Simplified judge flow** - Login → Select Event → Scoring (judges only see active events, go direct to scoring)
 
 ### Phase 6 Summary (Complete)
 - ✅ **CSV/PDF Export** - Admin exports leaderboard results with filters
@@ -203,6 +204,7 @@ npm run setup-accounts   # Reset/recreate judge accounts
 | PWA icons | `public/icons/` |
 | PWA icon generator | `scripts/generate-icons.js` |
 | Offline page | `src/app/offline/page.tsx` |
+| Judge navigation | `src/components/JudgeNavigation.tsx` |
 
 ### Database Tables
 - `events` - Event management (name, date, location, status)
