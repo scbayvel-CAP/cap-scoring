@@ -9,25 +9,31 @@
 
 ## NEXT SESSION: Start Here
 
-**Current Status:** App is LIVE and PWA-enabled. Phase 8 (UI/UX Redesign) COMPLETE. Ready for real event testing.
+**Current Status:** App is LIVE and PWA-enabled. Phase 9 (Leaderboard Refinements) COMPLETE. Ready for cap-race.com integration.
 
-### Immediate Next: Phase 5 - Real Event Testing
-When real event data is available:
-1. Create a test event with real athlete data
-2. Have judges test score entry on phones
-3. Verify leaderboard updates in real-time
-4. Test offline mode (airplane mode → enter scores → reconnect)
-5. Gather feedback and fix issues
+### Immediate Next: Phase 10 - cap-race.com Integration
+Implement leaderboard on the official CAP Race website:
+1. Determine integration approach (embed vs standalone)
+2. Design public-facing leaderboard for cap-race.com
+3. Connect to existing Supabase database
+4. Implement real-time updates
+5. Match CAP brand styling
 
-### Phase 8 Summary (Complete)
-- ✅ **Station color system** - Each station has distinct color identity (Run=orange, Row=blue, Bike=purple, Ski=green)
-- ✅ **Admin station tabs** - Admins can switch between stations via colored tab bar
-- ✅ **Judge station badge** - Judges see locked station indicator in their station's color
-- ✅ **Scoring progress bar** - Shows "X of Y scored" with station-colored fill
+### Phase 9 Summary (Complete) - Leaderboard Refinements
+- ✅ **Show actual distances** - Leaderboard now displays actual distances (e.g., "2,450m") instead of checkmarks
+- ✅ **Full station names** - Column headers show Run, Row, Bike, Ski instead of R, R, B, S
+- ✅ **Clickable rows** - Click any athlete row to view detailed breakdown
+- ✅ **Athlete detail page** - Shows name, bib, ranking, total distance, station breakdown, QR code
+- ✅ **Works for both** - Admin and public leaderboards both link to athlete detail
+
+### Phase 8 Summary (Complete) - Scoring UI/UX Redesign
+- ✅ **Admin station tabs** - Admins can switch between stations via tab bar
+- ✅ **Judge station badge** - Judges see locked station indicator (night-green)
+- ✅ **Scoring progress bar** - Shows "X of Y scored" with progress fill
 - ✅ **Heat selector buttons** - Replaced dropdowns with segmented button controls
-- ✅ **Score card states** - Visual states for empty/editing/saved/pending with appropriate colors
-- ✅ **Sticky layout** - Header, selectors, and progress bar stick to top; submit button sticks to bottom
-- ✅ **Enhanced submit footer** - Full-width button with offline warning, dynamic label
+- ✅ **Score card states** - Visual states for empty/editing/saved/pending
+- ✅ **Sticky submit button** - Submit footer sticks to bottom while scrolling
+- ✅ **Simplified design** - Removed sticky header for more screen space, consistent night-green colors
 
 ### Phase 7 Summary (Complete)
 - ✅ **Touch targets** - All buttons and inputs now meet 44px+ minimum for mobile
@@ -68,15 +74,18 @@ When real event data is available:
 - **Skeleton loaders** - Loading states show content placeholders instead of blank screens
 - **Error boundaries** - Graceful error handling prevents full-page crashes
 - **Mobile-optimized scoring** - 44px+ touch targets, auto-advance between inputs, outdoor-friendly typography
-- **Station color coding** - Each station has distinct color (Run=orange, Row=blue, Bike=purple, Ski=green)
 - **Scoring progress** - Visual progress bar showing scored/total athletes per heat
-- **Sticky UI layout** - Selectors stick to top, submit button sticks to bottom while scrolling
+- **Sticky submit button** - Submit button stays visible while scrolling through athletes
+- **Leaderboard with distances** - Shows actual Run/Row/Bike/Ski distances, not just checkmarks
+- **Clickable athlete rows** - Click any row to view detailed station breakdown
 
 ### Roadmap
 1. ~~**Phase 6** - Enhancements (export, undo, validation, audit log, loading/error UX)~~ ✅ COMPLETE
 2. ~~**Phase 7** - Scoring UI/UX polish for mobile judges~~ ✅ COMPLETE
-3. ~~**Phase 8** - UI/UX Redesign (station colors, tabs, progress bar, sticky layout)~~ ✅ COMPLETE
-4. **Phase 5** - Real event testing (when event data is available) ← **NEXT**
+3. ~~**Phase 8** - Scoring UI/UX Redesign (station tabs, progress bar, sticky submit)~~ ✅ COMPLETE
+4. ~~**Phase 9** - Leaderboard refinements (show distances, clickable rows)~~ ✅ COMPLETE
+5. **Phase 10** - cap-race.com leaderboard integration ← **NEXT**
+6. **Phase 5** - Real event testing (when event data is available)
 
 ### Account Credentials
 
@@ -241,6 +250,22 @@ npm run setup-accounts   # Reset/recreate judge accounts
 ---
 
 ## Session Log
+
+### 2026-02-25: Leaderboard Refinements (Phase 9)
+- Updated Leaderboard component to show actual distances instead of checkmarks
+- Station columns now show full names (Run, Row, Bike, Ski) instead of single letters
+- Made entire athlete row clickable - navigates to detailed athlete breakdown page
+- Athlete detail page shows: name, bib, ranking in category, total distance, station breakdown, QR code
+- Simplified Leaderboard component props (removed `showAthleteLinks`, uses `eventId` for navigation)
+- Both admin (`/events/.../leaderboard`) and public (`/live/...`) leaderboards now have clickable rows
+- Build verified successful
+
+### 2026-02-25: Scoring UI Simplification
+- Reverted station colors to consistent night-green (removed per-station colors as overkill)
+- Removed sticky header - selectors now scroll naturally with content
+- Kept only sticky submit button at bottom (most useful element to keep visible)
+- Gives judges more screen space for athlete score cards
+- Cleaner, simpler interface
 
 ### 2026-02-25: Scoring UI/UX Redesign (Phase 8)
 - Implemented new color-coded station system
