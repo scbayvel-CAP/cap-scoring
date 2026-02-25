@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Navigation } from '@/components/Navigation'
 import { JudgeNavigation } from '@/components/JudgeNavigation'
 import { HeatSelector } from '@/components/HeatSelector'
+import { StationTabs, getStationColor, getStationBgClass } from '@/components/StationTabs'
+import { ScoringProgress } from '@/components/ScoringProgress'
 import { ScoreEntry } from '@/components/ScoreEntry'
 import { UndoToast } from '@/components/UndoToast'
 import { RangeWarningModal } from '@/components/RangeWarningModal'
@@ -348,8 +350,14 @@ export default function ScoringPage() {
     )
   }
 
+  // Calculate scoring progress
+  const scoredCount = athletes.filter((athlete) => {
+    const score = scores.find((s) => s.athlete_id === athlete.id && s.station === effectiveStation)
+    return score !== undefined
+  }).length
+
   return (
-    <div>
+    <div className="min-h-screen bg-ivory flex flex-col">
       {isAdmin ? (
         <Navigation eventId={eventId} eventName={event?.name} />
       ) : (
@@ -360,73 +368,106 @@ export default function ScoringPage() {
         />
       )}
       <PageErrorBoundary pageName="Scoring">
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Page header with station indicator */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-night-green mb-2">
-            Enter Scores
-          </h1>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="station-badge-locked">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {getStationName(effectiveStation)}
-            </span>
-            {isStationLocked && (
-              <span className="text-sm text-battleship flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                Assigned station
-              </span>
-            )}
+      {/* Sticky header section */}
+      <div className="sticky top-0 z-40 bg-ivory border-b border-eggshell shadow-sm">
+        {/* Station indicator for judges / Station tabs for admin */}
+        {isStationLocked ? (
+          <div className="px-4 py-3 bg-chalk border-b border-eggshell">
+            <div className="flex items-center justify-between max-w-3xl mx-auto">
+              <div className="flex items-center gap-3">
+                <span
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-white font-semibold"
+                  style={{ backgroundColor: getStationColor(effectiveStation) }}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {getStationName(effectiveStation)}
+                </span>
+                <span className="text-sm text-battleship flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Assigned
+                </span>
+              </div>
+              {/* Online/Offline indicator */}
+              {!isOnline ? (
+                <span className="flex items-center gap-2 py-1 px-3 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" />
+                  </svg>
+                  Offline
+                </span>
+              ) : pendingSyncCount > 0 ? (
+                <span className="flex items-center gap-2 py-1 px-3 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  Syncing {pendingSyncCount}...
+                </span>
+              ) : null}
+            </div>
           </div>
-        </div>
-
-        <HeatSelector
-          raceType={raceType}
-          heatNumber={heatNumber}
-          station={effectiveStation}
-          stationLocked={isStationLocked}
-          onRaceTypeChange={(type) => {
-            setRaceType(type)
-            setPendingScores({})
-          }}
-          onHeatChange={(heat) => {
-            setHeatNumber(heat)
-            setPendingScores({})
-          }}
-          onStationChange={(s) => {
-            setStation(s)
-            setPendingScores({})
-          }}
-        />
-
-        {message && (
-          <div
-            className={`p-4 rounded-md mb-6 ${
-              message.type === 'success'
-                ? 'bg-green-50 text-green-700'
-                : message.type === 'info'
-                ? 'bg-blue-50 text-blue-700'
-                : 'bg-red-50 text-red-700'
-            }`}
-          >
-            {message.text}
+        ) : (
+          <div className="max-w-3xl mx-auto">
+            <StationTabs
+              currentStation={station}
+              onStationChange={(s) => {
+                setStation(s)
+                setPendingScores({})
+              }}
+            />
           </div>
         )}
 
-        {!isOnline && (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-md mb-6 flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>
-              <strong>Offline mode:</strong> Scores will be saved locally and synced when connection is restored.
-              {pendingSyncCount > 0 && ` (${pendingSyncCount} pending)`}
-            </span>
+        {/* Heat selector */}
+        <div className="max-w-3xl mx-auto">
+          <HeatSelector
+            raceType={raceType}
+            heatNumber={heatNumber}
+            station={effectiveStation}
+            stationLocked={isStationLocked}
+            onRaceTypeChange={(type) => {
+              setRaceType(type)
+              setPendingScores({})
+            }}
+            onHeatChange={(heat) => {
+              setHeatNumber(heat)
+              setPendingScores({})
+            }}
+            onStationChange={(s) => {
+              setStation(s)
+              setPendingScores({})
+            }}
+          />
+        </div>
+
+        {/* Progress bar */}
+        {athletes.length > 0 && (
+          <div className="max-w-3xl mx-auto">
+            <ScoringProgress
+              scored={scoredCount}
+              total={athletes.length}
+              station={effectiveStation}
+            />
+          </div>
+        )}
+      </div>
+
+      <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        {message && (
+          <div
+            className={`p-4 rounded-lg mb-6 ${
+              message.type === 'success'
+                ? 'bg-green-50 text-green-700 border border-green-200'
+                : message.type === 'info'
+                ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}
+          >
+            {message.text}
           </div>
         )}
 
@@ -455,47 +496,70 @@ export default function ScoringPage() {
               ))}
             </div>
 
-            {/* Submit button - fixed at bottom with safe area padding */}
-            <div className="sticky bottom-0 pt-4 pb-6 -mx-4 px-4 bg-gradient-to-t from-ivory via-ivory to-transparent">
-              <button
-                onClick={handleSubmitClick}
-                disabled={saving || !hasChanges}
-                className="btn-primary btn-lg w-full shadow-lg"
-              >
-                {saving ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Submitting...
-                  </span>
-                ) : (
-                  `Submit ${Object.values(pendingScores).filter(v => v !== null).length} Score${Object.values(pendingScores).filter(v => v !== null).length !== 1 ? 's' : ''}`
-                )}
-              </button>
-            </div>
           </>
         )}
-
-        {lastSubmission && (
-          <UndoToast
-            message={`${lastSubmission.count} score(s) submitted`}
-            duration={60}
-            onUndo={handleUndo}
-            onDismiss={handleDismissUndo}
-          />
-        )}
-
-        {showWarningModal && (
-          <RangeWarningModal
-            warnings={scoreWarnings}
-            onConfirm={handleConfirmedSubmit}
-            onCancel={handleCancelWarning}
-            isSubmitting={saving}
-          />
-        )}
       </main>
+
+      {/* Sticky submit footer */}
+      {athletes.length > 0 && (
+        <div className="sticky bottom-0 z-40 p-4 bg-chalk border-t border-eggshell shadow-lg">
+          <div className="max-w-3xl mx-auto">
+            {/* Offline warning in submit area */}
+            {!isOnline && (
+              <div className="flex items-center justify-center gap-2 mb-3 py-2 px-4 bg-amber-50 text-amber-700 rounded-lg text-sm">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" />
+                </svg>
+                Offline - scores will sync when connected
+              </div>
+            )}
+
+            <button
+              onClick={handleSubmitClick}
+              disabled={saving || !hasChanges}
+              className="w-full py-4 rounded-xl font-bold text-lg transition-all shadow-md"
+              style={{
+                backgroundColor: saving || !hasChanges ? '#D1D5DB' : '#1A1A1A',
+                color: saving || !hasChanges ? '#9CA3AF' : '#FFFFFF',
+                minHeight: '56px',
+              }}
+            >
+              {saving ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Submitting...
+                </span>
+              ) : hasChanges ? (
+                `Submit ${Object.values(pendingScores).filter(v => v !== null).length} Score${Object.values(pendingScores).filter(v => v !== null).length !== 1 ? 's' : ''}`
+              ) : (
+                'All Scores Submitted'
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modals and toasts */}
+      {lastSubmission && (
+        <UndoToast
+          message={`${lastSubmission.count} score(s) submitted`}
+          duration={60}
+          onUndo={handleUndo}
+          onDismiss={handleDismissUndo}
+        />
+      )}
+
+      {showWarningModal && (
+        <RangeWarningModal
+          warnings={scoreWarnings}
+          onConfirm={handleConfirmedSubmit}
+          onCancel={handleCancelWarning}
+          isSubmitting={saving}
+        />
+      )}
       </PageErrorBoundary>
     </div>
   )

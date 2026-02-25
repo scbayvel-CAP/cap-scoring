@@ -29,6 +29,15 @@ module.exports = {
           800: '#17150B',
           900: '#17150B',
         },
+        // Station Colors
+        'station-run': '#E85D04',    // Burnt orange
+        'station-row': '#0077B6',    // Ocean blue
+        'station-bike': '#7B2CBF',   // Deep purple
+        'station-ski': '#2D6A4F',    // Forest green
+        // Status Colors
+        success: '#059669',
+        warning: '#F59E0B',
+        error: '#DC2626',
       },
       fontFamily: {
         mono: ['Azeret Mono', 'ui-monospace', 'monospace'],

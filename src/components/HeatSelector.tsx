@@ -1,7 +1,6 @@
 'use client'
 
-import { getHeatNumbers, getStationNumbers, getStationName } from '@/lib/utils'
-import { Select } from '@/components/ui/Select'
+import { getHeatNumbers } from '@/lib/utils'
 
 interface HeatSelectorProps {
   raceType: 'singles' | 'doubles'
@@ -16,53 +15,46 @@ interface HeatSelectorProps {
 export function HeatSelector({
   raceType,
   heatNumber,
-  station,
-  stationLocked = false,
   onRaceTypeChange,
   onHeatChange,
-  onStationChange,
 }: HeatSelectorProps) {
+  const heats = getHeatNumbers()
+
   return (
-    <div className="card mb-6">
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1 min-w-[150px]">
-          <Select
-            label="Race Type"
-            value={raceType}
-            onChange={(e) => onRaceTypeChange(e.target.value as 'singles' | 'doubles')}
+    <div className="bg-chalk border-b border-eggshell">
+      {/* Race Type Toggle */}
+      <div className="px-4 pt-4 pb-3">
+        <label className="label mb-2">Race Type</label>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onRaceTypeChange('singles')}
+            className={`heat-btn flex-1 ${raceType === 'singles' ? 'active' : ''}`}
           >
-            <option value="singles">Singles</option>
-            <option value="doubles">Doubles</option>
-          </Select>
-        </div>
-        <div className="flex-1 min-w-[150px]">
-          <Select
-            label="Heat"
-            value={heatNumber}
-            onChange={(e) => onHeatChange(Number(e.target.value))}
+            Singles
+          </button>
+          <button
+            onClick={() => onRaceTypeChange('doubles')}
+            className={`heat-btn flex-1 ${raceType === 'doubles' ? 'active' : ''}`}
           >
-            {getHeatNumbers().map((h) => (
-              <option key={h} value={h}>
-                Heat {h}
-              </option>
-            ))}
-          </Select>
+            Doubles
+          </button>
         </div>
-        {!stationLocked && (
-          <div className="flex-1 min-w-[150px]">
-            <Select
-              label="Station"
-              value={station}
-              onChange={(e) => onStationChange(Number(e.target.value))}
+      </div>
+
+      {/* Heat Selector - Horizontally scrollable */}
+      <div className="px-4 pb-4">
+        <label className="label mb-2">Heat</label>
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          {heats.map((heat) => (
+            <button
+              key={heat}
+              onClick={() => onHeatChange(heat)}
+              className={`heat-btn ${heatNumber === heat ? 'active' : ''}`}
             >
-              {getStationNumbers().map((s) => (
-                <option key={s} value={s}>
-                  {getStationName(s)}
-                </option>
-              ))}
-            </Select>
-          </div>
-        )}
+              {heat}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )

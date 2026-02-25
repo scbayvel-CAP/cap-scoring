@@ -1,6 +1,6 @@
 # CAP 55 Scoring System - Project Status
 
-> **Last Updated:** 2026-02-23
+> **Last Updated:** 2026-02-25
 > **Project Location:** `/Users/scottbayvel/Documents/CAP Race/cap-scoring`
 > **Live URL:** https://cap-scoring.vercel.app
 > **GitHub:** https://github.com/scbayvel-CAP/cap-scoring
@@ -9,7 +9,7 @@
 
 ## NEXT SESSION: Start Here
 
-**Current Status:** App is LIVE and PWA-enabled. Phase 7 COMPLETE. Ready for real event testing.
+**Current Status:** App is LIVE and PWA-enabled. Phase 8 (UI/UX Redesign) COMPLETE. Ready for real event testing.
 
 ### Immediate Next: Phase 5 - Real Event Testing
 When real event data is available:
@@ -18,6 +18,16 @@ When real event data is available:
 3. Verify leaderboard updates in real-time
 4. Test offline mode (airplane mode → enter scores → reconnect)
 5. Gather feedback and fix issues
+
+### Phase 8 Summary (Complete)
+- ✅ **Station color system** - Each station has distinct color identity (Run=orange, Row=blue, Bike=purple, Ski=green)
+- ✅ **Admin station tabs** - Admins can switch between stations via colored tab bar
+- ✅ **Judge station badge** - Judges see locked station indicator in their station's color
+- ✅ **Scoring progress bar** - Shows "X of Y scored" with station-colored fill
+- ✅ **Heat selector buttons** - Replaced dropdowns with segmented button controls
+- ✅ **Score card states** - Visual states for empty/editing/saved/pending with appropriate colors
+- ✅ **Sticky layout** - Header, selectors, and progress bar stick to top; submit button sticks to bottom
+- ✅ **Enhanced submit footer** - Full-width button with offline warning, dynamic label
 
 ### Phase 7 Summary (Complete)
 - ✅ **Touch targets** - All buttons and inputs now meet 44px+ minimum for mobile
@@ -58,11 +68,15 @@ When real event data is available:
 - **Skeleton loaders** - Loading states show content placeholders instead of blank screens
 - **Error boundaries** - Graceful error handling prevents full-page crashes
 - **Mobile-optimized scoring** - 44px+ touch targets, auto-advance between inputs, outdoor-friendly typography
+- **Station color coding** - Each station has distinct color (Run=orange, Row=blue, Bike=purple, Ski=green)
+- **Scoring progress** - Visual progress bar showing scored/total athletes per heat
+- **Sticky UI layout** - Selectors stick to top, submit button sticks to bottom while scrolling
 
 ### Roadmap
 1. ~~**Phase 6** - Enhancements (export, undo, validation, audit log, loading/error UX)~~ ✅ COMPLETE
 2. ~~**Phase 7** - Scoring UI/UX polish for mobile judges~~ ✅ COMPLETE
-3. **Phase 5** - Real event testing (when event data is available) ← **NEXT**
+3. ~~**Phase 8** - UI/UX Redesign (station colors, tabs, progress bar, sticky layout)~~ ✅ COMPLETE
+4. **Phase 5** - Real event testing (when event data is available) ← **NEXT**
 
 ### Account Credentials
 
@@ -205,6 +219,8 @@ npm run setup-accounts   # Reset/recreate judge accounts
 | PWA icon generator | `scripts/generate-icons.js` |
 | Offline page | `src/app/offline/page.tsx` |
 | Judge navigation | `src/components/JudgeNavigation.tsx` |
+| Station tabs (admin) | `src/components/StationTabs.tsx` |
+| Scoring progress bar | `src/components/ScoringProgress.tsx` |
 
 ### Database Tables
 - `events` - Event management (name, date, location, status)
@@ -225,6 +241,42 @@ npm run setup-accounts   # Reset/recreate judge accounts
 ---
 
 ## Session Log
+
+### 2026-02-25: Scoring UI/UX Redesign (Phase 8)
+- Implemented new color-coded station system
+  - Run: Burnt orange (#E85D04)
+  - Row: Ocean blue (#0077B6)
+  - Bike: Deep purple (#7B2CBF)
+  - Ski: Forest green (#2D6A4F)
+- **Admin vs Judge UI split:**
+  - Admins: See `StationTabs` component with colored station buttons to switch between stations
+  - Judges: See locked station badge with their assigned station color (no switching)
+- **New Components:**
+  - `StationTabs.tsx` - Horizontal colored tab bar for admin station selection
+  - `ScoringProgress.tsx` - Progress bar showing "X of Y scored" with station color
+- **HeatSelector redesign:**
+  - Replaced dropdowns with segmented button controls
+  - Race type: Singles/Doubles toggle buttons
+  - Heat: Horizontally scrollable button list (1-12)
+- **ScoreEntry card state-based styling:**
+  - Empty: Dashed border
+  - Editing: Solid border in station color
+  - Saved: Green border with "Saved" badge
+  - Changed: Amber border with "Pending" badge
+- **Sticky layout structure:**
+  - Header with station indicator/tabs (sticky top)
+  - Heat selector (sticky top)
+  - Progress bar (sticky top)
+  - Scrollable athlete cards
+  - Submit button footer (sticky bottom)
+- **Submit button improvements:**
+  - Full width with 56px min height
+  - Shows "All Scores Submitted" when no pending changes
+  - Offline warning integrated into submit footer
+- **Online/Offline indicator:**
+  - Compact pill badge in header showing offline status or sync progress
+- Added CSS utility classes for station tabs, heat buttons, score cards, progress bar, scrollbar-hide
+- Build verified successful
 
 ### 2026-02-23: Simplified Judge Flow
 - Created dedicated `JudgeNavigation` component with minimal UI

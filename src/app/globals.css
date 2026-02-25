@@ -109,4 +109,96 @@
   .saved-indicator {
     @apply inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-green-100 text-green-700 text-sm font-semibold;
   }
+
+  /* Station tab buttons */
+  .station-tab {
+    @apply flex-1 py-3 px-4 rounded-lg font-semibold text-sm uppercase tracking-wide transition-all border-2;
+    min-height: 48px;
+  }
+
+  .station-tab-run {
+    @apply border-station-run;
+  }
+  .station-tab-run.active {
+    @apply bg-station-run text-white;
+  }
+  .station-tab-run:not(.active) {
+    @apply text-station-run bg-transparent hover:bg-station-run/10;
+  }
+
+  .station-tab-row {
+    @apply border-station-row;
+  }
+  .station-tab-row.active {
+    @apply bg-station-row text-white;
+  }
+  .station-tab-row:not(.active) {
+    @apply text-station-row bg-transparent hover:bg-station-row/10;
+  }
+
+  .station-tab-bike {
+    @apply border-station-bike;
+  }
+  .station-tab-bike.active {
+    @apply bg-station-bike text-white;
+  }
+  .station-tab-bike:not(.active) {
+    @apply text-station-bike bg-transparent hover:bg-station-bike/10;
+  }
+
+  .station-tab-ski {
+    @apply border-station-ski;
+  }
+  .station-tab-ski.active {
+    @apply bg-station-ski text-white;
+  }
+  .station-tab-ski:not(.active) {
+    @apply text-station-ski bg-transparent hover:bg-station-ski/10;
+  }
+
+  /* Heat selector buttons */
+  .heat-btn {
+    @apply flex-shrink-0 py-2 px-4 rounded-lg font-medium text-sm transition-all whitespace-nowrap;
+    min-height: 44px;
+  }
+  .heat-btn.active {
+    @apply bg-night-green text-white;
+  }
+  .heat-btn:not(.active) {
+    @apply bg-eggshell text-battleship hover:bg-battleship hover:text-chalk;
+  }
+
+  /* Score card states */
+  .score-card {
+    @apply bg-chalk rounded-xl p-4 transition-all;
+  }
+  .score-card-empty {
+    @apply border border-dashed border-battleship;
+  }
+  .score-card-editing {
+    @apply border-2 shadow-md;
+  }
+  .score-card-saved {
+    @apply border-2 border-success;
+  }
+  .score-card-error {
+    @apply border-2 border-error;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-2 bg-eggshell rounded-full overflow-hidden;
+  }
+  .progress-bar-fill {
+    @apply h-full rounded-full transition-all duration-300;
+  }
+
+  /* Hide scrollbar but allow scrolling */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
