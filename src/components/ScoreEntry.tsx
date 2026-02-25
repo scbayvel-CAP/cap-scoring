@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Athlete, Score } from '@/lib/supabase/types'
 import { getDisplayName, getScoreForStation } from '@/lib/utils'
-import { getStationColor } from './StationTabs'
 
 type CardStatus = 'empty' | 'editing' | 'saved' | 'changed'
 
@@ -22,7 +21,6 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
   )
   const [isFocused, setIsFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const stationColor = getStationColor(station)
 
   useEffect(() => {
     setValue(existingScore ? existingScore.distance_meters.toString() : '')
@@ -69,7 +67,7 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
   const getBorderStyle = () => {
     switch (status) {
       case 'editing':
-        return { borderColor: stationColor, borderWidth: '2px' }
+        return { borderColor: '#303029', borderWidth: '2px' } // night-green
       case 'saved':
         return { borderColor: '#059669', borderWidth: '2px' }
       case 'changed':
@@ -141,8 +139,7 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           onKeyDown={handleKeyDown}
-          className="w-full h-14 px-4 pr-12 text-right text-2xl font-bold bg-ivory border border-eggshell rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all font-mono tabular-nums"
-          style={{ '--tw-ring-color': stationColor } as React.CSSProperties}
+          className="w-full h-14 px-4 pr-12 text-right text-2xl font-bold bg-ivory border border-eggshell rounded-lg focus:outline-none focus:ring-2 focus:ring-olive focus:border-transparent transition-all font-mono tabular-nums"
           placeholder="0"
           min="0"
           enterKeyHint="next"

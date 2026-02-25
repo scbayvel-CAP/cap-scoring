@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Navigation } from '@/components/Navigation'
 import { JudgeNavigation } from '@/components/JudgeNavigation'
 import { HeatSelector } from '@/components/HeatSelector'
-import { StationTabs, getStationColor, getStationBgClass } from '@/components/StationTabs'
+import { StationTabs } from '@/components/StationTabs'
 import { ScoringProgress } from '@/components/ScoringProgress'
 import { ScoreEntry } from '@/components/ScoreEntry'
 import { UndoToast } from '@/components/UndoToast'
@@ -368,50 +368,45 @@ export default function ScoringPage() {
         />
       )}
       <PageErrorBoundary pageName="Scoring">
-      {/* Sticky header section */}
-      <div className="sticky top-0 z-40 bg-ivory border-b border-eggshell shadow-sm">
+
+      <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         {/* Station indicator for judges / Station tabs for admin */}
         {isStationLocked ? (
-          <div className="px-4 py-3 bg-chalk border-b border-eggshell">
-            <div className="flex items-center justify-between max-w-3xl mx-auto">
-              <div className="flex items-center gap-3">
-                <span
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-white font-semibold"
-                  style={{ backgroundColor: getStationColor(effectiveStation) }}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  {getStationName(effectiveStation)}
-                </span>
-                <span className="text-sm text-battleship flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  Assigned
-                </span>
-              </div>
-              {/* Online/Offline indicator */}
-              {!isOnline ? (
-                <span className="flex items-center gap-2 py-1 px-3 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" />
-                  </svg>
-                  Offline
-                </span>
-              ) : pendingSyncCount > 0 ? (
-                <span className="flex items-center gap-2 py-1 px-3 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                  <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                  Syncing {pendingSyncCount}...
-                </span>
-              ) : null}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-night-green text-chalk font-semibold">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {getStationName(effectiveStation)}
+              </span>
+              <span className="text-sm text-battleship flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Assigned
+              </span>
             </div>
+            {/* Online/Offline indicator */}
+            {!isOnline ? (
+              <span className="flex items-center gap-2 py-1 px-3 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3" />
+                </svg>
+                Offline
+              </span>
+            ) : pendingSyncCount > 0 ? (
+              <span className="flex items-center gap-2 py-1 px-3 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                <svg className="w-3 h-3 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Syncing {pendingSyncCount}...
+              </span>
+            ) : null}
           </div>
         ) : (
-          <div className="max-w-3xl mx-auto">
+          <div className="mb-4 -mx-4">
             <StationTabs
               currentStation={station}
               onStationChange={(s) => {
@@ -423,7 +418,7 @@ export default function ScoringPage() {
         )}
 
         {/* Heat selector */}
-        <div className="max-w-3xl mx-auto">
+        <div className="mb-4 -mx-4">
           <HeatSelector
             raceType={raceType}
             heatNumber={heatNumber}
@@ -446,17 +441,14 @@ export default function ScoringPage() {
 
         {/* Progress bar */}
         {athletes.length > 0 && (
-          <div className="max-w-3xl mx-auto">
+          <div className="mb-6 -mx-4">
             <ScoringProgress
               scored={scoredCount}
               total={athletes.length}
-              station={effectiveStation}
             />
           </div>
         )}
-      </div>
 
-      <main className="flex-1 max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
         {message && (
           <div
             className={`p-4 rounded-lg mb-6 ${

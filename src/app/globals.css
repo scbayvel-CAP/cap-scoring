@@ -112,48 +112,14 @@
 
   /* Station tab buttons */
   .station-tab {
-    @apply flex-1 py-3 px-4 rounded-lg font-semibold text-sm uppercase tracking-wide transition-all border-2;
+    @apply flex-1 py-3 px-4 rounded-lg font-semibold text-sm uppercase tracking-wide transition-all border-2 border-night-green;
     min-height: 48px;
   }
-
-  .station-tab-run {
-    @apply border-station-run;
+  .station-tab.active {
+    @apply bg-night-green text-chalk;
   }
-  .station-tab-run.active {
-    @apply bg-station-run text-white;
-  }
-  .station-tab-run:not(.active) {
-    @apply text-station-run bg-transparent hover:bg-station-run/10;
-  }
-
-  .station-tab-row {
-    @apply border-station-row;
-  }
-  .station-tab-row.active {
-    @apply bg-station-row text-white;
-  }
-  .station-tab-row:not(.active) {
-    @apply text-station-row bg-transparent hover:bg-station-row/10;
-  }
-
-  .station-tab-bike {
-    @apply border-station-bike;
-  }
-  .station-tab-bike.active {
-    @apply bg-station-bike text-white;
-  }
-  .station-tab-bike:not(.active) {
-    @apply text-station-bike bg-transparent hover:bg-station-bike/10;
-  }
-
-  .station-tab-ski {
-    @apply border-station-ski;
-  }
-  .station-tab-ski.active {
-    @apply bg-station-ski text-white;
-  }
-  .station-tab-ski:not(.active) {
-    @apply text-station-ski bg-transparent hover:bg-station-ski/10;
+  .station-tab:not(.active) {
+    @apply text-night-green bg-transparent hover:bg-night-green/10;
   }
 
   /* Heat selector buttons */

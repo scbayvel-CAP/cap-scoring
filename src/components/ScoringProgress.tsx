@@ -1,16 +1,12 @@
 'use client'
 
-import { getStationColor } from './StationTabs'
-
 interface ScoringProgressProps {
   scored: number
   total: number
-  station: number
 }
 
-export function ScoringProgress({ scored, total, station }: ScoringProgressProps) {
+export function ScoringProgress({ scored, total }: ScoringProgressProps) {
   const percentage = total > 0 ? (scored / total) * 100 : 0
-  const stationColor = getStationColor(station)
   const isComplete = scored === total && total > 0
 
   return (
@@ -30,11 +26,8 @@ export function ScoringProgress({ scored, total, station }: ScoringProgressProps
       </div>
       <div className="progress-bar">
         <div
-          className="progress-bar-fill"
-          style={{
-            width: `${percentage}%`,
-            backgroundColor: stationColor,
-          }}
+          className="progress-bar-fill bg-night-green"
+          style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
