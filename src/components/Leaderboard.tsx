@@ -1,22 +1,22 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Athlete, Score, STATIONS } from '@/lib/supabase/types'
 import {
   getDisplayName,
   formatDistance,
-  calculateTotalDistance,
-  hasCompletedStation,
+  getScoreForStation,
   sortByTotalDistance,
 } from '@/lib/utils'
 
 interface LeaderboardProps {
   athletes: Array<Athlete & { scores: Score[] }>
   eventId?: string
-  showAthleteLinks?: boolean
 }
 
-export function Leaderboard({ athletes, eventId, showAthleteLinks = false }: LeaderboardProps) {
+export function Leaderboard({ athletes, eventId }: LeaderboardProps) {
+  const router = useRouter()
   const rankedAthletes = sortByTotalDistance(athletes)
 
   if (rankedAthletes.length === 0) {
@@ -25,6 +25,12 @@ export function Leaderboard({ athletes, eventId, showAthleteLinks = false }: Lea
         <p className="text-gray-500">No athletes match the selected filters</p>
       </div>
     )
+  }
+
+  const handleRowClick = (athleteId: string) => {
+    if (eventId) {
+      router.push(`/live/${eventId}/athlete/${athleteId}`)
+    }
   }
 
   return (
@@ -37,10 +43,10 @@ export function Leaderboard({ athletes, eventId, showAthleteLinks = false }: Lea
             {Object.entries(STATIONS).map(([num, name]) => (
               <th
                 key={num}
-                className="table-th-center w-16"
+                className="table-th-center"
                 title={name}
               >
-                {name.charAt(0)}
+                {name}
               </th>
             ))}
             <th className="table-th-right">Total</th>
@@ -50,7 +56,8 @@ export function Leaderboard({ athletes, eventId, showAthleteLinks = false }: Lea
           {rankedAthletes.map((athlete) => (
             <tr
               key={athlete.id}
-              className={athlete.rank <= 3 ? 'bg-yellow-50' : 'hover:bg-gray-50'}
+              onClick={() => handleRowClick(athlete.id)}
+              className={`${athlete.rank <= 3 ? 'bg-yellow-50' : 'hover:bg-gray-50'} ${eventId ? 'cursor-pointer' : ''}`}
             >
               <td className="px-4 py-3 whitespace-nowrap">
                 <span
@@ -69,49 +76,42 @@ export function Leaderboard({ athletes, eventId, showAthleteLinks = false }: Lea
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 <div>
-                  {showAthleteLinks && eventId ? (
-                    <Link
-                      href={`/live/${eventId}/athlete/${athlete.id}`}
-                      className="font-medium text-primary-600 hover:text-primary-800 hover:underline"
-                    >
-                      {getDisplayName(athlete)}
-                    </Link>
-                  ) : (
-                    <span className="font-medium text-gray-900">
-                      {getDisplayName(athlete)}
-                    </span>
-                  )}
-                  <span className="ml-2 text-sm text-gray-500">
+                  <span className="font-medium text-night-green">
+                    {getDisplayName(athlete)}
+                  </span>
+                  <span className="ml-2 text-sm text-battleship">
                     #{athlete.bib_number}
                   </span>
                 </div>
                 {athlete.race_type === 'singles' ? (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-battleship">
                     {athlete.gender === 'male' ? 'M' : 'F'} / {athlete.age_category}
                   </span>
                 ) : (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-battleship">
                     {athlete.doubles_category}
                   </span>
                 )}
               </td>
               {Object.keys(STATIONS).map((stationNum) => {
-                const completed = hasCompletedStation(athlete.scores, parseInt(stationNum))
+                const score = getScoreForStation(athlete.scores, parseInt(stationNum))
                 return (
                   <td
                     key={stationNum}
                     className="px-4 py-3 whitespace-nowrap text-center"
                   >
-                    {completed ? (
-                      <span className="text-green-600 text-lg">&#10003;</span>
+                    {score ? (
+                      <span className="text-sm font-medium text-night-green">
+                        {formatDistance(score.distance_meters)}
+                      </span>
                     ) : (
-                      <span className="text-gray-300">-</span>
+                      <span className="text-battleship">-</span>
                     )}
                   </td>
                 )
               })}
               <td className="px-4 py-3 whitespace-nowrap text-right">
-                <span className="font-bold text-lg text-gray-900">
+                <span className="font-bold text-lg text-night-green">
                   {formatDistance(athlete.totalDistance)}
                 </span>
               </td>

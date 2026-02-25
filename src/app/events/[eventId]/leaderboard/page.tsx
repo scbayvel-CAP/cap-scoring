@@ -270,7 +270,7 @@ export default function LeaderboardPage() {
           Showing {filteredAthletes.length} {raceType === 'singles' ? 'athletes' : 'teams'}
         </div>
 
-        <Leaderboard athletes={filteredAthletes} />
+        <Leaderboard athletes={filteredAthletes} eventId={eventId} />
       </main>
       </PageErrorBoundary>
     </div>

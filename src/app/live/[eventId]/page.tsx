@@ -229,7 +229,7 @@ export default function PublicLeaderboardPage() {
           Showing {filteredAthletes.length} {raceType === 'singles' ? 'athletes' : 'teams'}
         </div>
 
-        <Leaderboard athletes={filteredAthletes} eventId={eventId} showAthleteLinks />
+        <Leaderboard athletes={filteredAthletes} eventId={eventId} />
 
         <footer className="mt-12 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
           <p>CAP 55 Scoring System</p>
