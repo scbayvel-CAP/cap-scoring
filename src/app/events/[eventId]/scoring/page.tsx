@@ -9,7 +9,6 @@ import { HeatSelector } from '@/components/HeatSelector'
 import { StationTabs } from '@/components/StationTabs'
 import { ScoringProgress } from '@/components/ScoringProgress'
 import { ScoreEntry } from '@/components/ScoreEntry'
-import { UndoToast } from '@/components/UndoToast'
 import { RangeWarningModal } from '@/components/RangeWarningModal'
 import { PageErrorBoundary } from '@/components/ErrorBoundary'
 import { Skeleton, SkeletonScoreEntryList } from '@/components/Skeleton'
@@ -38,12 +37,6 @@ export default function ScoringPage() {
   // Local score changes (before submission)
   const [pendingScores, setPendingScores] = useState<Record<string, number | null>>({})
 
-  // Track last submission for undo functionality
-  const [lastSubmission, setLastSubmission] = useState<{
-    athleteIds: string[]
-    station: number
-    count: number
-  } | null>(null)
 
   // Range warning state
   const [scoreWarnings, setScoreWarnings] = useState<ScoreWarning[]>([])
@@ -68,7 +61,6 @@ export default function ScoringPage() {
     scores,
     isOffline: scoresOffline,
     upsertScores,
-    deleteScores,
     refresh: refreshScores,
   } = useScores({
     athleteIds,
@@ -141,13 +133,52 @@ export default function ScoringPage() {
     return scoresToUpsert
   }, [pendingScores, effectiveStation])
 
+  // Check if all athletes have scores (either saved or pending)
+  const getMissingScoreAthletes = useCallback(() => {
+    return athletes.filter((athlete) => {
+      // Check if there's a saved score for this athlete at the current station
+      const savedScore = scores.find(
+        (s) => s.athlete_id === athlete.id && s.station === effectiveStation
+      )
+      // Check if there's a pending score
+      const pendingScore = pendingScores[athlete.id]
+      // Athlete is missing a score if neither exists
+      return savedScore === undefined && (pendingScore === null || pendingScore === undefined)
+    })
+  }, [athletes, scores, effectiveStation, pendingScores])
+
+  // Advance to next heat
+  const advanceToNextHeat = useCallback(() => {
+    if (heatNumber < 12) {
+      setHeatNumber(heatNumber + 1)
+    } else if (raceType === 'singles') {
+      setRaceType('doubles')
+      setHeatNumber(1)
+    }
+    // If already at doubles heat 12, stay there (all heats complete)
+  }, [heatNumber, raceType])
+
   // Check for range warnings before submitting
   const handleSubmitClick = () => {
     setMessage(null)
+
+    // Check if all athletes have scores
+    const missingAthletes = getMissingScoreAthletes()
+    if (missingAthletes.length > 0) {
+      const names = missingAthletes.slice(0, 3).map(a => getDisplayName(a)).join(', ')
+      const remaining = missingAthletes.length > 3 ? ` and ${missingAthletes.length - 3} more` : ''
+      setMessage({
+        type: 'error',
+        text: `All athletes must have scores. Missing: ${names}${remaining}`
+      })
+      return
+    }
+
     const scoresToUpsert = buildScoresToUpsert()
 
+    // If no new scores to submit but all athletes are scored, just advance to next heat
     if (scoresToUpsert.length === 0) {
-      setMessage({ type: 'error', text: 'No scores to submit' })
+      advanceToNextHeat()
       return
     }
 
@@ -217,23 +248,26 @@ export default function ScoringPage() {
 
         // Log in background - don't block the UI
         logScoreChanges(supabase, auditEntries).catch(console.error)
+      }
 
-        setLastSubmission({
-          athleteIds: scoresToUpsert.map((s) => s.athlete_id),
-          station: effectiveStation,
-          count: scoresToUpsert.length,
-        })
-        // Hide the regular success message - UndoToast will show instead
-        setMessage(null)
-      } else {
+      // Show success message
+      if (!isOnline || scoresOffline) {
         setMessage({
           type: 'info',
           text: `${scoresToUpsert.length} scores saved locally. Will sync when online.`,
+        })
+      } else {
+        setMessage({
+          type: 'success',
+          text: `${scoresToUpsert.length} score(s) submitted`,
         })
       }
 
       setPendingScores({})
       await refreshScores()
+
+      // Auto-advance to next heat
+      advanceToNextHeat()
     } catch (err) {
       setMessage({
         type: 'error',
@@ -269,53 +303,6 @@ export default function ScoringPage() {
     }
   }, [athletes])
 
-  const handleUndo = useCallback(async () => {
-    if (!lastSubmission) return
-
-    try {
-      // Get scores before deleting (for audit log)
-      const scoresToDelete = scores.filter(
-        (s) => lastSubmission.athleteIds.includes(s.athlete_id) && s.station === lastSubmission.station
-      )
-
-      await deleteScores(lastSubmission.athleteIds, lastSubmission.station)
-
-      // Log audit entries for deleted scores (only when online)
-      if (isOnline && !scoresOffline) {
-        const { data: userData } = await supabase.auth.getUser()
-        const userId = userData.user?.id || null
-
-        const auditEntries: ScoreAuditLogInsert[] = scoresToDelete.map((s) => ({
-          athlete_id: s.athlete_id,
-          event_id: eventId,
-          station: lastSubmission.station,
-          action: 'deleted' as const,
-          old_value: s.distance_meters,
-          new_value: null,
-          changed_by: userId,
-          metadata: { reason: 'undo' },
-        }))
-
-        logScoreChanges(supabase, auditEntries).catch(console.error)
-      }
-
-      setMessage({
-        type: 'info',
-        text: `${lastSubmission.count} score(s) undone`,
-      })
-      setLastSubmission(null)
-      await refreshScores()
-    } catch (err) {
-      setMessage({
-        type: 'error',
-        text: err instanceof Error ? err.message : 'Failed to undo scores',
-      })
-    }
-  }, [lastSubmission, deleteScores, refreshScores, scores, isOnline, scoresOffline, supabase, eventId])
-
-  const handleDismissUndo = useCallback(() => {
-    setLastSubmission(null)
-  }, [])
 
   if ((loading && !event) || roleLoading) {
     return (
@@ -506,44 +493,53 @@ export default function ScoringPage() {
               </div>
             )}
 
-            <button
-              onClick={handleSubmitClick}
-              disabled={saving || !hasChanges}
-              className="w-full py-4 rounded-xl font-bold text-lg transition-all shadow-md"
-              style={{
-                backgroundColor: saving || !hasChanges ? '#D1D5DB' : '#1A1A1A',
-                color: saving || !hasChanges ? '#9CA3AF' : '#FFFFFF',
-                minHeight: '56px',
-              }}
-            >
-              {saving ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Submitting...
-                </span>
-              ) : hasChanges ? (
-                `Submit ${Object.values(pendingScores).filter(v => v !== null).length} Score${Object.values(pendingScores).filter(v => v !== null).length !== 1 ? 's' : ''}`
-              ) : (
-                'All Scores Submitted'
-              )}
-            </button>
+            {(() => {
+              const missingCount = getMissingScoreAthletes().length
+              const allScored = missingCount === 0
+              const isLastHeat = heatNumber === 12 && raceType === 'doubles'
+              const nextHeatLabel = heatNumber < 12
+                ? `Heat ${heatNumber + 1}`
+                : raceType === 'singles'
+                  ? 'Doubles Heat 1'
+                  : null
+
+              // Disable if: saving, or not all scored, or at last heat with no changes
+              const isDisabled = saving || !allScored || (isLastHeat && !hasChanges)
+
+              return (
+                <button
+                  onClick={handleSubmitClick}
+                  disabled={isDisabled}
+                  className="w-full py-4 rounded-xl font-bold text-lg transition-all shadow-md"
+                  style={{
+                    backgroundColor: isDisabled ? '#D1D5DB' : '#1A1A1A',
+                    color: isDisabled ? '#9CA3AF' : '#FFFFFF',
+                    minHeight: '56px',
+                  }}
+                >
+                  {saving ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Submitting...
+                    </span>
+                  ) : !allScored ? (
+                    `${missingCount} Athlete${missingCount !== 1 ? 's' : ''} Missing Scores`
+                  ) : hasChanges ? (
+                    nextHeatLabel ? `Submit & Continue to ${nextHeatLabel}` : 'Submit Scores'
+                  ) : (
+                    nextHeatLabel ? `Continue to ${nextHeatLabel}` : 'All Heats Complete'
+                  )}
+                </button>
+              )
+            })()}
           </div>
         </div>
       )}
 
-      {/* Modals and toasts */}
-      {lastSubmission && (
-        <UndoToast
-          message={`${lastSubmission.count} score(s) submitted`}
-          duration={60}
-          onUndo={handleUndo}
-          onDismiss={handleDismissUndo}
-        />
-      )}
-
+      {/* Range warning modal */}
       {showWarningModal && (
         <RangeWarningModal
           warnings={scoreWarnings}

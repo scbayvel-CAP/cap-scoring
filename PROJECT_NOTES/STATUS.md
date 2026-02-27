@@ -1,6 +1,6 @@
 # CAP 55 Scoring System - Project Status
 
-> **Last Updated:** 2026-02-25
+> **Last Updated:** 2026-02-27
 > **Project Location:** `/Users/scottbayvel/Documents/CAP Race/cap-scoring`
 > **Live URL:** https://cap-scoring.vercel.app
 > **GitHub:** https://github.com/scbayvel-CAP/cap-scoring
@@ -68,8 +68,9 @@ Implement leaderboard on the official CAP Race website:
 - **CSV bulk import** for athletes (singles + doubles, with validation)
 - **CSV templates** available at `templates/singles_template.csv` and `templates/doubles_template.csv`
 - **CSV/PDF export** for leaderboard results (admin only, with filters)
-- **Undo score** - 60-second window to undo submitted scores
 - **Range warnings** - Flags unusually high/low distances before saving
+- **All scores required** - Judges must score ALL athletes before submitting
+- **Auto-advance** - After submit, automatically advances to next heat
 - **Audit log** - Complete history of all score changes (admin only)
 - **Skeleton loaders** - Loading states show content placeholders instead of blank screens
 - **Error boundaries** - Graceful error handling prevents full-page crashes
@@ -250,6 +251,23 @@ npm run setup-accounts   # Reset/recreate judge accounts
 ---
 
 ## Session Log
+
+### 2026-02-27: Scoring Workflow Improvements
+- **Removed undo toast** - Undo popup after score submission removed (scores can be edited directly)
+- **Required all scores** - Judges must enter scores for ALL athletes in a heat before submitting
+  - Button shows "X Athletes Missing Scores" when incomplete
+  - Error message lists which athletes are missing scores
+- **Auto-advance to next heat** - After submitting scores, automatically moves to the next heat
+  - Singles Heat 1-11 → next heat
+  - Singles Heat 12 → Doubles Heat 1
+  - Doubles Heat 12 → stays (all heats complete)
+- **Smart submit button** - Shows contextual labels:
+  - "X Athletes Missing Scores" (disabled) when incomplete
+  - "Submit & Continue to Heat X" when ready to submit
+  - "Continue to Heat X" when all scores already saved
+  - "All Heats Complete" at final heat
+- Removed UndoToast component and related undo functionality
+- Build verified successful
 
 ### 2026-02-25: Leaderboard Refinements (Phase 9)
 - Updated Leaderboard component to show actual distances instead of checkmarks
