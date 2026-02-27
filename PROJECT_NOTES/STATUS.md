@@ -9,7 +9,7 @@
 
 ## NEXT SESSION: Start Here
 
-**Current Status:** App is LIVE and PWA-enabled. Phase 9 (Leaderboard Refinements) COMPLETE. Ready for cap-race.com integration.
+**Current Status:** App is LIVE and PWA-enabled. Scoring Workflow Improvements COMPLETE. Ready for cap-race.com integration.
 
 ### Immediate Next: Phase 10 - cap-race.com Integration
 Implement leaderboard on the official CAP Race website:
@@ -18,6 +18,12 @@ Implement leaderboard on the official CAP Race website:
 3. Connect to existing Supabase database
 4. Implement real-time updates
 5. Match CAP brand styling
+
+### Scoring Workflow Improvements (Complete) - 2026-02-27
+- ✅ **Removed undo toast** - Scores can be edited directly, no need for undo popup
+- ✅ **All scores required** - Judges must enter scores for ALL athletes in a heat before submitting
+- ✅ **Auto-advance to next heat** - After submit, automatically moves to next heat (Singles 1→12, then Doubles 1→12)
+- ✅ **Smart submit button** - Shows contextual labels: missing count, "Submit & Continue to Heat X", or "All Heats Complete"
 
 ### Phase 9 Summary (Complete) - Leaderboard Refinements
 - ✅ **Show actual distances** - Leaderboard now displays actual distances (e.g., "2,450m") instead of checkmarks
@@ -41,14 +47,13 @@ Implement leaderboard on the official CAP Race website:
 - ✅ **Visual feedback** - Green border and badge for saved scores, "Changed" indicator for pending
 - ✅ **Auto-advance** - Press Enter after score to automatically focus next athlete input
 - ✅ **Submit button** - Shows score count, spinner during submit, sticky gradient background
-- ✅ **Undo toast** - Larger buttons, better positioning, progress bar at top
 - ✅ **Typography** - Larger text sizes optimized for outdoor/bright light visibility
 - ✅ **Range modal** - Stacked buttons on mobile for better touch targets
 - ✅ **Simplified judge flow** - Login → Select Event → Scoring (judges only see active events, go direct to scoring)
 
 ### Phase 6 Summary (Complete)
 - ✅ **CSV/PDF Export** - Admin exports leaderboard results with filters
-- ✅ **Undo Score** - 60-second undo window after submission
+- ❌ **Undo Score** - REMOVED (scores can be edited directly, undo was unnecessary)
 - ✅ **Range Warnings** - Flag unusually high/low distances before save
 - ✅ **Audit Log** - Track all score changes (who, when, original/edited values)
 - ❌ **Verification Workflow** - REMOVED (over-engineered, slows down live updates)
@@ -81,12 +86,13 @@ Implement leaderboard on the official CAP Race website:
 - **Clickable athlete rows** - Click any row to view detailed station breakdown
 
 ### Roadmap
-1. ~~**Phase 6** - Enhancements (export, undo, validation, audit log, loading/error UX)~~ ✅ COMPLETE
+1. ~~**Phase 6** - Enhancements (export, validation, audit log, loading/error UX)~~ ✅ COMPLETE
 2. ~~**Phase 7** - Scoring UI/UX polish for mobile judges~~ ✅ COMPLETE
 3. ~~**Phase 8** - Scoring UI/UX Redesign (station tabs, progress bar, sticky submit)~~ ✅ COMPLETE
 4. ~~**Phase 9** - Leaderboard refinements (show distances, clickable rows)~~ ✅ COMPLETE
-5. **Phase 10** - cap-race.com leaderboard integration ← **NEXT**
-6. **Phase 5** - Real event testing (when event data is available)
+5. ~~**Scoring Workflow** - All scores required, auto-advance to next heat~~ ✅ COMPLETE
+6. **Phase 10** - cap-race.com leaderboard integration ← **NEXT**
+7. **Phase 5** - Real event testing (when event data is available)
 
 ### Account Credentials
 
