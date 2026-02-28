@@ -9,41 +9,37 @@
 
 ## NEXT SESSION: Start Here
 
-**Current Status:** App is LIVE and PWA-enabled. Photo-First AI Scoring code COMPLETE. Needs infrastructure setup before testing.
+**Current Status:** App is LIVE and PWA-enabled. Photo verification scoring is simplified and ready. Needs Supabase Storage bucket setup before testing photos.
 
-### Immediate Next: Photo AI Scoring — Infrastructure Setup
-The code for Phase 11 (Photo-First AI Scoring) is fully implemented and builds successfully. Before testing, complete these infrastructure steps:
+### Immediate Next: Photo Verification — Infrastructure Setup
+Photo verification code is complete (simplified from AI scoring). Before testing, complete these infrastructure steps:
 
-1. **Add OpenAI API Key** — Add `OPENAI_API_KEY=sk-...` to `.env.local` (get key from https://platform.openai.com/api-keys)
-2. **Create Supabase Storage Bucket** — In Supabase Dashboard → Storage → New Bucket:
+1. **Create Supabase Storage Bucket** — In Supabase Dashboard → Storage → New Bucket:
    - Name: `score-photos`
    - Private bucket (not public)
    - File size limit: 5MB
    - Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`
    - RLS: Authenticated users can upload and read; admins can delete
-3. **Run Database Migration** — Execute `supabase/migrations/006_score_photos.sql` against your Supabase database (via Dashboard SQL editor or CLI)
-4. **Add OpenAI Key to Vercel** — In Vercel project settings → Environment Variables → Add `OPENAI_API_KEY`
-5. **Deploy** — Push to GitHub and verify Vercel deployment succeeds
-6. **Test** — Open scoring page on phone, photograph a Concept2 display, verify AI reads the distance
+2. **Run Database Migration** — Execute `supabase/migrations/006_score_photos.sql` against your Supabase database (via Dashboard SQL editor or CLI)
+3. **Deploy** — Push to GitHub and verify Vercel deployment succeeds
+4. **Test** — Open scoring page on phone, photograph a display, verify photo saves, then enter score manually
 
 ### After Infrastructure: Ready For
 - **Phase 10** - cap-race.com leaderboard integration
 - **Phase 5** - Real event testing (when event data is available)
 
-### Phase 11: Photo-First AI Scoring (Code Complete) - 2026-02-28
+### Phase 11: Photo Verification Scoring (Simplified) - 2026-02-28
 - ✅ **Database migration** - `score_photos` table with RLS policies (migration 006)
-- ✅ **API endpoint** - Combined upload + compress + OpenAI Vision analysis (`/api/photos/capture`)
-- ✅ **PhotoCapture component** - Camera button with states: idle → uploading → analyzing → done/error
-- ✅ **ScoreEntry redesign** - Integrated photo capture, AI auto-fill, confidence indicators
+- ✅ **API endpoint** - Upload photo to Supabase Storage, insert DB row (`/api/photos/capture`)
+- ✅ **PhotoCapture component** - Camera button with states: idle → uploading → done/error
+- ✅ **ScoreEntry** - Photo required before score input unlocks (when online). Judge enters score manually.
 - ✅ **Scoring page wiring** - Photo state management, photo-to-score linking on submit
-- ✅ **Admin photo review** - Filterable grid page with discrepancy highlighting (`/events/[eventId]/photos`)
-- ✅ **PhotoLightbox** - Full-screen photo viewer with AI vs judge values, pinch-to-zoom
+- ✅ **Admin photo review** - Filterable grid page (`/events/[eventId]/photos`)
+- ✅ **PhotoLightbox** - Full-screen photo viewer with athlete info, pinch-to-zoom
 - ✅ **Client-side compression** - Canvas API resize (1200px, JPEG 85%) before upload
-- ✅ **Server-side compression** - Sharp resize (1024px, JPEG 80%) before storage + AI
-- ✅ **Low confidence warning** - Amber warning when AI confidence < 0.7
-- ✅ **Offline fallback** - Camera disabled offline, manual entry works as before
-- ✅ **judge_final_value tracking** - Records what judge submitted vs what AI read
+- ✅ **Offline fallback** - Photo requirement skipped offline, manual entry works as before
 - ✅ **Event page link** - "Score Photos" card added to admin event overview
+- ✅ **Removed OpenAI/sharp** - No AI reading; photos are proof/verification backup only
 - ✅ **Build passes** - No TypeScript errors
 
 ### Scoring Workflow Improvements (Complete) - 2026-02-27
@@ -308,19 +304,19 @@ npm run setup-accounts   # Reset/recreate judge accounts
 
 ## Session Log
 
-### 2026-02-28: Photo-First AI Scoring (Phase 11)
-- Implemented complete photo-first scoring workflow
-- **Database:** Created `score_photos` table (migration 006) with fields for AI values, judge final values, confidence scores, and storage paths. RLS: authenticated can read/insert/update, admins can delete.
-- **API Route:** `/api/photos/capture` — single endpoint that receives photo, compresses with sharp (1024px, JPEG 80%), uploads to Supabase Storage, sends to OpenAI GPT-4o Vision, inserts database row, returns extracted distance
-- **PhotoCapture Component:** Camera button using `<input type="file" capture="environment">` for native rear camera. States: idle → captured → uploading → analyzing → done/error. Client-side pre-compression via Canvas API (1200px, JPEG 85%).
-- **ScoreEntry Redesign:** Integrated PhotoCapture above score input. When online, input is dimmed until photo taken. AI-extracted distance auto-fills. Shows AI reading with confidence indicator. Low confidence (< 0.7) shows amber warning.
-- **Scoring Page Wiring:** Added `photoStates` and `photoResults` state maps. Passes photo props to each ScoreEntry. After successful submit, links photos to scores via `linkPhotosToScores()` and updates `judge_final_value`. Clears photo state on heat/station changes.
-- **Admin Photo Review:** New page at `/events/[eventId]/photos` — filterable grid of photo cards by station and heat. Shows thumbnails, athlete info, AI vs judge values. Discrepancies highlighted with amber ring. Click to open lightbox.
-- **PhotoLightbox:** Full-screen overlay with photo, pinch-to-zoom, metadata, AI vs judge value comparison, difference calculation for discrepancies.
-- **Infrastructure:** Added `openai` npm package, `OPENAI_API_KEY` to `.env.local.example`, body size limit 2MB → 5MB, added "Score Photos" admin link to event page.
-- **Offline handling:** Camera button disabled when offline, manual score entry works as before.
-- Build verified successful — no TypeScript errors
-- **Status:** Code complete. Needs infrastructure setup (OpenAI key, Supabase storage bucket, run migration) before testing.
+### 2026-02-28: Photo Verification Scoring (Phase 11 — Simplified)
+- Implemented photo verification scoring workflow (simplified from AI-based approach)
+- **Approach:** Judges photograph machine display as proof/verification, then enter score manually. No AI reading.
+- **Database:** `score_photos` table (migration 006) — AI fields exist in schema but are no longer populated.
+- **API Route:** `/api/photos/capture` — receives photo, uploads to Supabase Storage, inserts DB row, returns `{ photoId, thumbnailUrl }`.
+- **PhotoCapture Component:** Camera button using `<input type="file" capture="environment">`. States: idle → uploading → done/error. Client-side compression via Canvas API (1200px, JPEG 85%).
+- **ScoreEntry:** Photo required before score input unlocks (when online). No AI auto-fill — judge types score manually.
+- **Scoring Page:** Photo state management per athlete. Photos linked to scores on submit. Photo requirement skipped when offline.
+- **Admin Photo Review:** Filterable grid at `/events/[eventId]/photos` — thumbnails, athlete info, station, heat, timestamp. Click to open lightbox.
+- **PhotoLightbox:** Full-screen overlay with photo, athlete info, pinch-to-zoom. No AI/judge comparison.
+- **Removed:** `openai` and `sharp` npm packages, `OPENAI_API_KEY` from env files and Vercel.
+- Build verified successful — no TypeScript errors.
+- **Status:** Code complete. Needs Supabase Storage bucket + migration before testing.
 
 ### 2026-02-27: Scoring Workflow Improvements
 - **Removed undo toast** - Undo popup after score submission removed (scores can be edited directly)

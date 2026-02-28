@@ -525,6 +525,7 @@ export default function ScoringPage() {
                     onPhotoStateChange={(state) => handlePhotoStateChange(athlete.id, state)}
                     photoResult={photoResults[athlete.id] || null}
                     onPhotoResultChange={(result) => handlePhotoResultChange(athlete.id, result)}
+                    requirePhoto={isOnline}
                   />
                 </div>
               ))}

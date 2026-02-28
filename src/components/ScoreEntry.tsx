@@ -20,6 +20,7 @@ interface ScoreEntryProps {
   onPhotoStateChange?: (state: PhotoCaptureState) => void
   photoResult?: PhotoResult | null
   onPhotoResultChange?: (result: PhotoResult | null) => void
+  requirePhoto?: boolean
 }
 
 export function ScoreEntry({
@@ -34,6 +35,7 @@ export function ScoreEntry({
   onPhotoStateChange,
   photoResult,
   onPhotoResultChange,
+  requirePhoto = false,
 }: ScoreEntryProps) {
   const existingScore = getScoreForStation(scores, station)
   const [value, setValue] = useState<string>(
@@ -85,6 +87,9 @@ export function ScoreEntry({
 
   // Whether photo features are enabled
   const hasPhotoFeature = !!eventId && !!onPhotoStateChange && !!onPhotoResultChange
+
+  // Score input is locked until a photo is taken (unless athlete already has a saved score)
+  const inputDisabled = requirePhoto && hasPhotoFeature && photoState !== 'done' && !existingScore
 
   const getCardClass = () => {
     const base = 'score-card cursor-pointer'
@@ -154,7 +159,7 @@ export function ScoreEntry({
       )}
 
       {/* Score input row */}
-      <div className="relative">
+      <div className="relative" style={inputDisabled ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
         <input
           ref={inputRef}
           type="number"
@@ -169,11 +174,19 @@ export function ScoreEntry({
           placeholder="0"
           min="0"
           enterKeyHint="next"
+          disabled={inputDisabled}
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-battleship font-medium">
           m
         </span>
       </div>
+
+      {/* Hint when input is disabled waiting for photo */}
+      {inputDisabled && (
+        <p className="text-xs text-battleship mt-1.5 text-center">
+          Take a photo first to enter score
+        </p>
+      )}
     </div>
   )
 }
