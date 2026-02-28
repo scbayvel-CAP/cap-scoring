@@ -519,13 +519,16 @@ export default function ScoringPage() {
                     scores={athleteScores(athlete.id)}
                     onChange={handleScoreChange}
                     onEnterPress={index < athletes.length - 1 ? () => focusNextAthlete(athlete.id) : undefined}
-                    eventId={eventId}
-                    heatNumber={heatNumber}
-                    photoState={photoStates[athlete.id] || 'idle'}
-                    onPhotoStateChange={(state) => handlePhotoStateChange(athlete.id, state)}
-                    photoResult={photoResults[athlete.id] || null}
-                    onPhotoResultChange={(result) => handlePhotoResultChange(athlete.id, result)}
-                    requirePhoto={isOnline}
+                    requirePhoto
+                    // Photo props only passed when online — offline hides camera and unlocks input
+                    {...(isOnline ? {
+                      eventId,
+                      heatNumber,
+                      photoState: photoStates[athlete.id] || 'idle',
+                      onPhotoStateChange: (state: PhotoCaptureState) => handlePhotoStateChange(athlete.id, state),
+                      photoResult: photoResults[athlete.id] || null,
+                      onPhotoResultChange: (result: PhotoResult | null) => handlePhotoResultChange(athlete.id, result),
+                    } : {})}
                   />
                 </div>
               ))}

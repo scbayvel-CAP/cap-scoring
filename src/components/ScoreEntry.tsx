@@ -48,7 +48,18 @@ export function ScoreEntry({
     setValue(existingScore ? existingScore.distance_meters.toString() : '')
   }, [existingScore])
 
+  // Whether photo features are enabled (only when online — offline doesn't pass photo callbacks)
+  const hasPhotoFeature = !!eventId && !!onPhotoStateChange && !!onPhotoResultChange
+
+  // Score input is LOCKED until a photo has been successfully uploaded for this athlete.
+  // This is a hard rule when photo features are active (online).
+  // Offline: photo features are not passed in, so hasPhotoFeature is false and input is unlocked.
+  const inputDisabled = requirePhoto && hasPhotoFeature && photoState !== 'done'
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Hard guard: reject any input changes while photo is required but not taken
+    if (inputDisabled) return
+
     const newValue = e.target.value
     setValue(newValue)
 
@@ -63,6 +74,7 @@ export function ScoreEntry({
   }
 
   const handleCardClick = () => {
+    if (inputDisabled) return
     inputRef.current?.focus()
   }
 
@@ -84,12 +96,6 @@ export function ScoreEntry({
   }
 
   const status = getStatus()
-
-  // Whether photo features are enabled
-  const hasPhotoFeature = !!eventId && !!onPhotoStateChange && !!onPhotoResultChange
-
-  // Score input is locked until a photo is taken (unless athlete already has a saved score)
-  const inputDisabled = requirePhoto && hasPhotoFeature && photoState !== 'done' && !existingScore
 
   const getCardClass = () => {
     const base = 'score-card cursor-pointer'
