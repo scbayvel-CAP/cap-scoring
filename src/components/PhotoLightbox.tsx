@@ -8,8 +8,6 @@ interface PhotoLightboxProps {
   bibNumber: string
   station: string
   timestamp: string
-  aiValue: number | null
-  judgeValue: number | null
   onClose: () => void
 }
 
@@ -19,8 +17,6 @@ export function PhotoLightbox({
   bibNumber,
   station,
   timestamp,
-  aiValue,
-  judgeValue,
   onClose,
 }: PhotoLightboxProps) {
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -35,8 +31,6 @@ export function PhotoLightbox({
       document.body.style.overflow = ''
     }
   }, [handleKeyDown])
-
-  const hasDiscrepancy = aiValue !== null && judgeValue !== null && aiValue !== judgeValue
 
   return (
     <div
@@ -79,35 +73,6 @@ export function PhotoLightbox({
           alt={`Score photo for ${athleteName}`}
           className="max-w-full max-h-full object-contain rounded-lg"
         />
-      </div>
-
-      {/* Footer with values */}
-      <div
-        className="p-4 text-white"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-center gap-8">
-          <div className="text-center">
-            <p className="text-xs text-white/60 uppercase tracking-wider">AI Reading</p>
-            <p className="text-2xl font-mono font-bold">
-              {aiValue !== null ? `${aiValue.toLocaleString()}m` : '—'}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-white/60 uppercase tracking-wider">Judge Final</p>
-            <p className={`text-2xl font-mono font-bold ${hasDiscrepancy ? 'text-amber-400' : ''}`}>
-              {judgeValue !== null ? `${judgeValue.toLocaleString()}m` : '—'}
-            </p>
-          </div>
-          {hasDiscrepancy && (
-            <div className="text-center">
-              <p className="text-xs text-amber-400 uppercase tracking-wider">Difference</p>
-              <p className="text-2xl font-mono font-bold text-amber-400">
-                {judgeValue! > aiValue! ? '+' : ''}{(judgeValue! - aiValue!).toLocaleString()}m
-              </p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )

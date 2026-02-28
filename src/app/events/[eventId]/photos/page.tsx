@@ -188,17 +188,11 @@ export default function PhotoReviewPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {photos.map((photo) => {
-              const hasDiscrepancy =
-                photo.ai_extracted_value !== null &&
-                photo.judge_final_value !== null &&
-                photo.ai_extracted_value !== photo.judge_final_value
-
+              const meta = photo.metadata as Record<string, unknown>
               return (
                 <div
                   key={photo.id}
-                  className={`card p-0 overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${
-                    hasDiscrepancy ? 'ring-2 ring-amber-400' : ''
-                  }`}
+                  className="card p-0 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                   onClick={() => setLightboxPhoto(photo)}
                 >
                   {/* Photo thumbnail */}
@@ -235,33 +229,10 @@ export default function PhotoReviewPage() {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm">
-                      <div>
-                        <span className="text-battleship">AI: </span>
-                        <span className="font-mono font-semibold">
-                          {photo.ai_extracted_value !== null
-                            ? `${photo.ai_extracted_value.toLocaleString()}m`
-                            : '—'}
-                        </span>
-                      </div>
-                      <div>
-                        <span className="text-battleship">Judge: </span>
-                        <span className={`font-mono font-semibold ${hasDiscrepancy ? 'text-amber-600' : ''}`}>
-                          {photo.judge_final_value !== null
-                            ? `${photo.judge_final_value.toLocaleString()}m`
-                            : '—'}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between text-xs text-battleship">
+                      <span>Heat {String(meta?.heat_number ?? '?')}</span>
+                      <span>{new Date(photo.uploaded_at).toLocaleTimeString()}</span>
                     </div>
-
-                    {hasDiscrepancy && (
-                      <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                        Judge modified AI reading
-                      </p>
-                    )}
                   </div>
                 </div>
               )
@@ -278,8 +249,6 @@ export default function PhotoReviewPage() {
           bibNumber={lightboxPhoto.athlete?.bib_number || '?'}
           station={getStationName(lightboxPhoto.station)}
           timestamp={lightboxPhoto.uploaded_at}
-          aiValue={lightboxPhoto.ai_extracted_value}
-          judgeValue={lightboxPhoto.judge_final_value}
           onClose={() => setLightboxPhoto(null)}
         />
       )}

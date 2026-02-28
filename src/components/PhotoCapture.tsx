@@ -2,14 +2,11 @@
 
 import { useState, useRef, useCallback } from 'react'
 
-export type PhotoCaptureState = 'idle' | 'captured' | 'uploading' | 'analyzing' | 'done' | 'error'
+export type PhotoCaptureState = 'idle' | 'captured' | 'uploading' | 'done' | 'error'
 
 export interface PhotoResult {
   photoId: string
-  distance: number | null
-  confidence: number
   thumbnailUrl: string | null
-  aiError: string | null
 }
 
 interface PhotoCaptureProps {
@@ -18,7 +15,6 @@ interface PhotoCaptureProps {
   station: number
   bibNumber: string
   heatNumber: number
-  onDistanceExtracted: (distance: number | null, confidence: number, photoId: string) => void
   disabled?: boolean
   state: PhotoCaptureState
   onStateChange: (state: PhotoCaptureState) => void
@@ -87,7 +83,6 @@ export function PhotoCapture({
   station,
   bibNumber,
   heatNumber,
-  onDistanceExtracted,
   disabled = false,
   state,
   onStateChange,
@@ -114,9 +109,7 @@ export function PhotoCapture({
       // Compress client-side before upload
       const compressed = await compressImageClientSide(file)
 
-      onStateChange('analyzing')
-
-      // Upload + analyze in one request
+      // Upload
       const formData = new FormData()
       formData.append('image', compressed, 'photo.jpg')
       formData.append('athleteId', athleteId)
@@ -145,12 +138,9 @@ export function PhotoCapture({
 
       onPhotoResultChange(result)
       onStateChange('done')
-
-      // Notify parent of extracted distance
-      onDistanceExtracted(result.distance, result.confidence, result.photoId)
     } catch (err) {
       console.error('Photo capture error:', err)
-      setErrorMessage(err instanceof Error ? err.message : 'Failed to process photo')
+      setErrorMessage(err instanceof Error ? err.message : 'Failed to upload photo')
       onStateChange('error')
     }
 
@@ -158,7 +148,7 @@ export function PhotoCapture({
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }, [athleteId, eventId, station, bibNumber, heatNumber, onDistanceExtracted, onStateChange, onPhotoResultChange])
+  }, [athleteId, eventId, station, bibNumber, heatNumber, onStateChange, onPhotoResultChange])
 
   const handleRetake = useCallback(() => {
     if (thumbnailUrl) {
@@ -215,8 +205,8 @@ export function PhotoCapture({
     )
   }
 
-  // Processing states (captured, uploading, analyzing)
-  if (state === 'captured' || state === 'uploading' || state === 'analyzing') {
+  // Processing states (captured, uploading)
+  if (state === 'captured' || state === 'uploading') {
     return (
       <div>
         {fileInput}
@@ -240,21 +230,17 @@ export function PhotoCapture({
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-night-green">
-              {state === 'captured' ? 'Processing...' :
-               state === 'uploading' ? 'Uploading...' :
-               'Reading display...'}
+              {state === 'captured' ? 'Processing...' : 'Uploading...'}
             </p>
-            <p className="text-xs text-battleship">AI is reading the distance</p>
+            <p className="text-xs text-battleship">Saving photo for verification</p>
           </div>
         </div>
       </div>
     )
   }
 
-  // Done state
+  // Done state - thumbnail with green checkmark + retake
   if (state === 'done' && photoResult) {
-    const lowConfidence = photoResult.confidence < 0.7
-
     return (
       <div>
         {fileInput}
@@ -269,13 +255,11 @@ export function PhotoCapture({
                 className="w-full h-full object-cover"
               />
             )}
-            {!photoResult.aiError && (
-              <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 rounded-tl-lg flex items-center justify-center">
-                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-            )}
+            <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 rounded-tl-lg flex items-center justify-center">
+              <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
             {/* Retake button */}
             <button
               type="button"
@@ -289,30 +273,7 @@ export function PhotoCapture({
             </button>
           </div>
           <div className="flex-1 min-w-0">
-            {photoResult.distance !== null ? (
-              <>
-                <p className="text-sm text-battleship">
-                  AI read: <span className="font-mono font-semibold text-night-green">{photoResult.distance.toLocaleString()}m</span>
-                  {!lowConfidence && (
-                    <svg className="inline w-4 h-4 ml-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </p>
-                {lowConfidence && (
-                  <p className="text-xs text-amber-600 flex items-center gap-1 mt-0.5">
-                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    Low confidence - please verify
-                  </p>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-amber-600">
-                {photoResult.aiError || "Couldn't read display"} - enter manually
-              </p>
-            )}
+            <p className="text-sm text-green-600 font-medium">Photo saved</p>
           </div>
         </div>
       </div>
@@ -341,7 +302,7 @@ export function PhotoCapture({
             </div>
           </div>
           <div className="flex-1">
-            <p className="text-sm text-red-600">{errorMessage || 'Failed to process photo'}</p>
+            <p className="text-sm text-red-600">{errorMessage || 'Failed to upload photo'}</p>
             <button
               type="button"
               onClick={handleRetake}

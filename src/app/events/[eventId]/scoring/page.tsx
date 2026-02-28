@@ -131,12 +131,6 @@ export default function ScoringPage() {
     setPhotoResults((prev) => ({ ...prev, [athleteId]: result }))
   }
 
-  const handleDistanceExtracted = (athleteId: string, distance: number | null, _confidence: number, _photoId: string) => {
-    if (distance !== null) {
-      handleScoreChange(athleteId, distance)
-    }
-  }
-
   // Build the list of scores to submit
   const buildScoresToUpsert = useCallback((): ScoreInsert[] => {
     const scoresToUpsert: ScoreInsert[] = []
@@ -531,8 +525,6 @@ export default function ScoringPage() {
                     onPhotoStateChange={(state) => handlePhotoStateChange(athlete.id, state)}
                     photoResult={photoResults[athlete.id] || null}
                     onPhotoResultChange={(result) => handlePhotoResultChange(athlete.id, result)}
-                    onDistanceExtracted={handleDistanceExtracted}
-                    requirePhoto={isOnline}
                   />
                 </div>
               ))}
@@ -566,14 +558,6 @@ export default function ScoringPage() {
                   ? 'Doubles Heat 1'
                   : null
 
-              // Count athletes missing photos (when online)
-              const missingPhotoCount = isOnline
-                ? athletes.filter(a => {
-                    const pState = photoStates[a.id]
-                    return !pState || pState === 'idle'
-                  }).length
-                : 0
-
               // Disable if: saving, or not all scored, or at last heat with no changes
               const isDisabled = saving || !allScored || (isLastHeat && !hasChanges)
 
@@ -597,9 +581,7 @@ export default function ScoringPage() {
                       Submitting...
                     </span>
                   ) : !allScored ? (
-                    missingPhotoCount > 0 && missingPhotoCount === missingCount
-                      ? `${missingCount} Athlete${missingCount !== 1 ? 's' : ''} Need Photos`
-                      : `${missingCount} Athlete${missingCount !== 1 ? 's' : ''} Missing Scores`
+                    `${missingCount} Athlete${missingCount !== 1 ? 's' : ''} Missing Scores`
                   ) : hasChanges ? (
                     nextHeatLabel ? `Submit & Continue to ${nextHeatLabel}` : 'Submit Scores'
                   ) : (
