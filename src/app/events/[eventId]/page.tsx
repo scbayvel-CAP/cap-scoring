@@ -132,6 +132,17 @@ export default async function EventPage({ params }: PageProps) {
           </Link>
           {isAdmin && (
             <Link
+              href={`/events/${event.id}/photos`}
+              className="card hover:shadow-md transition-shadow"
+            >
+              <h2 className="text-lg font-semibold text-gray-900">Score Photos</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                Review photos of machine displays
+              </p>
+            </Link>
+          )}
+          {isAdmin && (
+            <Link
               href={`/events/${event.id}/audit-log`}
               className="card hover:shadow-md transition-shadow"
             >

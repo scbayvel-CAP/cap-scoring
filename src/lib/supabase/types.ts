@@ -248,6 +248,76 @@ export type Database = {
           }
         ]
       }
+      score_photos: {
+        Row: {
+          id: string
+          score_id: string | null
+          athlete_id: string
+          event_id: string
+          station: number
+          storage_path: string
+          ai_extracted_value: number | null
+          ai_confidence: number | null
+          ai_raw_response: Record<string, unknown> | null
+          judge_final_value: number | null
+          uploaded_by: string | null
+          uploaded_at: string
+          metadata: Record<string, unknown>
+        }
+        Insert: {
+          id?: string
+          score_id?: string | null
+          athlete_id: string
+          event_id: string
+          station: number
+          storage_path: string
+          ai_extracted_value?: number | null
+          ai_confidence?: number | null
+          ai_raw_response?: Record<string, unknown> | null
+          judge_final_value?: number | null
+          uploaded_by?: string | null
+          uploaded_at?: string
+          metadata?: Record<string, unknown>
+        }
+        Update: {
+          id?: string
+          score_id?: string | null
+          athlete_id?: string
+          event_id?: string
+          station?: number
+          storage_path?: string
+          ai_extracted_value?: number | null
+          ai_confidence?: number | null
+          ai_raw_response?: Record<string, unknown> | null
+          judge_final_value?: number | null
+          uploaded_by?: string | null
+          uploaded_at?: string
+          metadata?: Record<string, unknown>
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'score_photos_athlete_id_fkey'
+            columns: ['athlete_id']
+            isOneToOne: false
+            referencedRelation: 'athletes'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'score_photos_event_id_fkey'
+            columns: ['event_id']
+            isOneToOne: false
+            referencedRelation: 'events'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'score_photos_score_id_fkey'
+            columns: ['score_id']
+            isOneToOne: false
+            referencedRelation: 'scores'
+            referencedColumns: ['id']
+          }
+        ]
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -273,6 +343,8 @@ export type UserRole = Profile['role']
 export type ScoreAuditLog = Database['public']['Tables']['score_audit_log']['Row']
 export type ScoreAuditLogInsert = Database['public']['Tables']['score_audit_log']['Insert']
 export type AuditAction = ScoreAuditLog['action']
+export type ScorePhoto = Database['public']['Tables']['score_photos']['Row']
+export type ScorePhotoInsert = Database['public']['Tables']['score_photos']['Insert']
 
 // Extended types with relations
 export type AthleteWithScores = Athlete & {

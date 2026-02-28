@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Athlete, Score } from '@/lib/supabase/types'
 import { getDisplayName, getScoreForStation } from '@/lib/utils'
+import { PhotoCapture, PhotoCaptureState, PhotoResult } from './PhotoCapture'
 
 type CardStatus = 'empty' | 'editing' | 'saved' | 'changed'
 
@@ -12,9 +13,32 @@ interface ScoreEntryProps {
   scores: Score[]
   onChange: (athleteId: string, distance: number | null) => void
   onEnterPress?: () => void
+  // Photo integration props
+  eventId?: string
+  heatNumber?: number
+  photoState?: PhotoCaptureState
+  onPhotoStateChange?: (state: PhotoCaptureState) => void
+  photoResult?: PhotoResult | null
+  onPhotoResultChange?: (result: PhotoResult | null) => void
+  onDistanceExtracted?: (athleteId: string, distance: number | null, confidence: number, photoId: string) => void
+  requirePhoto?: boolean
 }
 
-export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }: ScoreEntryProps) {
+export function ScoreEntry({
+  athlete,
+  station,
+  scores,
+  onChange,
+  onEnterPress,
+  eventId,
+  heatNumber,
+  photoState = 'idle',
+  onPhotoStateChange,
+  photoResult,
+  onPhotoResultChange,
+  onDistanceExtracted,
+  requirePhoto = false,
+}: ScoreEntryProps) {
   const existingScore = getScoreForStation(scores, station)
   const [value, setValue] = useState<string>(
     existingScore ? existingScore.distance_meters.toString() : ''
@@ -51,6 +75,16 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
     }
   }
 
+  const handleDistanceExtracted = (distance: number | null, confidence: number, photoId: string) => {
+    // Auto-fill the score input with AI-extracted distance
+    if (distance !== null) {
+      setValue(distance.toString())
+      onChange(athlete.id, distance)
+    }
+    // Notify parent
+    onDistanceExtracted?.(athlete.id, distance, confidence, photoId)
+  }
+
   const hasChange = value !== '' && value !== (existingScore?.distance_meters?.toString() || '')
 
   // Determine card status
@@ -63,19 +97,11 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
 
   const status = getStatus()
 
-  // Get border style based on status
-  const getBorderStyle = () => {
-    switch (status) {
-      case 'editing':
-        return { borderColor: '#303029', borderWidth: '2px' } // night-green
-      case 'saved':
-        return { borderColor: '#059669', borderWidth: '2px' }
-      case 'changed':
-        return { borderColor: '#F59E0B', borderWidth: '2px' }
-      default:
-        return {}
-    }
-  }
+  // Whether photo features are enabled
+  const hasPhotoFeature = !!eventId && !!onPhotoStateChange && !!onPhotoResultChange
+
+  // Score input should be dimmed when requirePhoto is true and no photo taken yet
+  const inputDisabled = requirePhoto && photoState === 'idle' && !existingScore
 
   const getCardClass = () => {
     const base = 'score-card cursor-pointer'
@@ -94,7 +120,7 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
   return (
     <div
       className={getCardClass()}
-      style={status === 'editing' ? getBorderStyle() : undefined}
+      style={status === 'editing' ? { borderColor: '#303029', borderWidth: '2px' } : undefined}
       onClick={handleCardClick}
     >
       {/* Athlete info row */}
@@ -127,8 +153,27 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
         )}
       </div>
 
+      {/* Photo capture section */}
+      {hasPhotoFeature && (
+        <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+          <PhotoCapture
+            athleteId={athlete.id}
+            eventId={eventId!}
+            station={station}
+            bibNumber={athlete.bib_number}
+            heatNumber={heatNumber || 1}
+            onDistanceExtracted={handleDistanceExtracted}
+            disabled={!requirePhoto && false}
+            state={photoState}
+            onStateChange={onPhotoStateChange!}
+            photoResult={photoResult}
+            onPhotoResultChange={onPhotoResultChange!}
+          />
+        </div>
+      )}
+
       {/* Score input row */}
-      <div className="relative">
+      <div className="relative" style={inputDisabled ? { opacity: 0.4, pointerEvents: 'none' } : undefined}>
         <input
           ref={inputRef}
           type="number"
@@ -143,11 +188,19 @@ export function ScoreEntry({ athlete, station, scores, onChange, onEnterPress }:
           placeholder="0"
           min="0"
           enterKeyHint="next"
+          disabled={inputDisabled}
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-battleship font-medium">
           m
         </span>
       </div>
+
+      {/* Hint when input is disabled waiting for photo */}
+      {inputDisabled && (
+        <p className="text-xs text-battleship mt-1.5 text-center">
+          Take a photo first to enter score
+        </p>
+      )}
     </div>
   )
 }

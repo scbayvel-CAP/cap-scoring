@@ -15,7 +15,8 @@ import { Skeleton, SkeletonScoreEntryList } from '@/components/Skeleton'
 import { Athlete, Event, ScoreInsert, ScoreAuditLogInsert } from '@/lib/supabase/types'
 import { getStationName, getDisplayName } from '@/lib/utils'
 import { validateScores, ScoreWarning } from '@/lib/validation/ranges'
-import { logScoreChanges } from '@/lib/supabase/queries'
+import { logScoreChanges, linkPhotosToScores } from '@/lib/supabase/queries'
+import { PhotoCaptureState, PhotoResult } from '@/components/PhotoCapture'
 import { useScores } from '@/hooks/useScores'
 import { useOffline } from '@/hooks/useOffline'
 import { useRole } from '@/hooks/useRole'
@@ -37,6 +38,9 @@ export default function ScoringPage() {
   // Local score changes (before submission)
   const [pendingScores, setPendingScores] = useState<Record<string, number | null>>({})
 
+  // Photo states per athlete
+  const [photoStates, setPhotoStates] = useState<Record<string, PhotoCaptureState>>({})
+  const [photoResults, setPhotoResults] = useState<Record<string, PhotoResult | null>>({})
 
   // Range warning state
   const [scoreWarnings, setScoreWarnings] = useState<ScoreWarning[]>([])
@@ -103,6 +107,8 @@ export default function ScoringPage() {
     }
 
     setPendingScores({})
+    setPhotoStates({})
+    setPhotoResults({})
     setLoading(false)
   }, [eventId, raceType, heatNumber, supabase, isOnline])
 
@@ -115,6 +121,20 @@ export default function ScoringPage() {
       ...prev,
       [athleteId]: distance,
     }))
+  }
+
+  const handlePhotoStateChange = (athleteId: string, state: PhotoCaptureState) => {
+    setPhotoStates((prev) => ({ ...prev, [athleteId]: state }))
+  }
+
+  const handlePhotoResultChange = (athleteId: string, result: PhotoResult | null) => {
+    setPhotoResults((prev) => ({ ...prev, [athleteId]: result }))
+  }
+
+  const handleDistanceExtracted = (athleteId: string, distance: number | null, _confidence: number, _photoId: string) => {
+    if (distance !== null) {
+      handleScoreChange(athleteId, distance)
+    }
   }
 
   // Build the list of scores to submit
@@ -229,7 +249,32 @@ export default function ScoringPage() {
       const userId = userData.user?.id || null
 
       // Use the offline-enabled upsert
-      await upsertScores(scoresToUpsert)
+      const upsertedScores = await upsertScores(scoresToUpsert)
+
+      // Link photos to scores (only when online)
+      if (isOnline && !scoresOffline && upsertedScores) {
+        const photoMappings: Array<{ photoId: string; scoreId: string }> = []
+        for (const score of upsertedScores) {
+          const result = photoResults[score.athlete_id]
+          if (result?.photoId) {
+            photoMappings.push({ photoId: result.photoId, scoreId: score.id })
+          }
+        }
+        if (photoMappings.length > 0) {
+          // Update judge_final_value on photos
+          for (const mapping of photoMappings) {
+            const score = upsertedScores.find(s => s.id === mapping.scoreId)
+            if (score) {
+              supabase
+                .from('score_photos')
+                .update({ judge_final_value: score.distance_meters } as never)
+                .eq('id', mapping.photoId)
+                .then(() => {})
+            }
+          }
+          linkPhotosToScores(supabase, photoMappings).catch(console.error)
+        }
+      }
 
       // Log audit entries (only when online)
       if (isOnline && !scoresOffline) {
@@ -264,6 +309,8 @@ export default function ScoringPage() {
       }
 
       setPendingScores({})
+      setPhotoStates({})
+      setPhotoResults({})
       await refreshScores()
 
       // Auto-advance to next heat
@@ -399,6 +446,8 @@ export default function ScoringPage() {
               onStationChange={(s) => {
                 setStation(s)
                 setPendingScores({})
+                setPhotoStates({})
+                setPhotoResults({})
               }}
             />
           </div>
@@ -414,14 +463,20 @@ export default function ScoringPage() {
             onRaceTypeChange={(type) => {
               setRaceType(type)
               setPendingScores({})
+              setPhotoStates({})
+              setPhotoResults({})
             }}
             onHeatChange={(heat) => {
               setHeatNumber(heat)
               setPendingScores({})
+              setPhotoStates({})
+              setPhotoResults({})
             }}
             onStationChange={(s) => {
               setStation(s)
               setPendingScores({})
+              setPhotoStates({})
+              setPhotoResults({})
             }}
           />
         </div>
@@ -470,6 +525,14 @@ export default function ScoringPage() {
                     scores={athleteScores(athlete.id)}
                     onChange={handleScoreChange}
                     onEnterPress={index < athletes.length - 1 ? () => focusNextAthlete(athlete.id) : undefined}
+                    eventId={eventId}
+                    heatNumber={heatNumber}
+                    photoState={photoStates[athlete.id] || 'idle'}
+                    onPhotoStateChange={(state) => handlePhotoStateChange(athlete.id, state)}
+                    photoResult={photoResults[athlete.id] || null}
+                    onPhotoResultChange={(result) => handlePhotoResultChange(athlete.id, result)}
+                    onDistanceExtracted={handleDistanceExtracted}
+                    requirePhoto={isOnline}
                   />
                 </div>
               ))}
@@ -503,6 +566,14 @@ export default function ScoringPage() {
                   ? 'Doubles Heat 1'
                   : null
 
+              // Count athletes missing photos (when online)
+              const missingPhotoCount = isOnline
+                ? athletes.filter(a => {
+                    const pState = photoStates[a.id]
+                    return !pState || pState === 'idle'
+                  }).length
+                : 0
+
               // Disable if: saving, or not all scored, or at last heat with no changes
               const isDisabled = saving || !allScored || (isLastHeat && !hasChanges)
 
@@ -526,7 +597,9 @@ export default function ScoringPage() {
                       Submitting...
                     </span>
                   ) : !allScored ? (
-                    `${missingCount} Athlete${missingCount !== 1 ? 's' : ''} Missing Scores`
+                    missingPhotoCount > 0 && missingPhotoCount === missingCount
+                      ? `${missingCount} Athlete${missingCount !== 1 ? 's' : ''} Need Photos`
+                      : `${missingCount} Athlete${missingCount !== 1 ? 's' : ''} Missing Scores`
                   ) : hasChanges ? (
                     nextHeatLabel ? `Submit & Continue to ${nextHeatLabel}` : 'Submit Scores'
                   ) : (

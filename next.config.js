@@ -63,7 +63,7 @@ const withPWA = require('@ducanh2912/next-pwa').default({
 const nextConfig = {
   experimental: {
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '5mb',
     },
   },
 }

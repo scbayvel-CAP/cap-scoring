@@ -1,4 +1,4 @@
-import { Event, Athlete, Score, AthleteWithScores, AthleteInsert, ScoreInsert, ScoreAuditLog, ScoreAuditLogInsert, AuditAction } from './types'
+import { Event, Athlete, Score, AthleteWithScores, AthleteInsert, ScoreInsert, ScoreAuditLog, ScoreAuditLogInsert, AuditAction, ScorePhoto, ScorePhotoInsert } from './types'
 import { createClient } from './client'
 
 type SupabaseClient = ReturnType<typeof createClient>
@@ -355,6 +355,93 @@ export async function getAuditLogCount(
   }
 
   const { count, error } = await query
+
+  if (error) throw error
+  return count || 0
+}
+
+// Score Photo queries
+
+export async function insertScorePhoto(
+  supabase: SupabaseClient,
+  photo: ScorePhotoInsert
+): Promise<ScorePhoto> {
+  const result = await supabase
+    .from('score_photos')
+    .insert(photo as never)
+    .select()
+    .single() as unknown as QueryResult<ScorePhoto>
+
+  if (result.error) throw result.error
+  if (!result.data) throw new Error('Failed to insert score photo')
+  return result.data
+}
+
+export async function linkPhotosToScores(
+  supabase: SupabaseClient,
+  mappings: Array<{ photoId: string; scoreId: string }>
+): Promise<void> {
+  for (const { photoId, scoreId } of mappings) {
+    const { error } = await supabase
+      .from('score_photos')
+      .update({ score_id: scoreId } as never)
+      .eq('id', photoId)
+
+    if (error) {
+      console.error('Failed to link photo to score:', error)
+    }
+  }
+}
+
+export interface GetScorePhotosOptions {
+  eventId: string
+  station?: number
+  athleteId?: string
+}
+
+export async function getScorePhotos(
+  supabase: SupabaseClient,
+  options: GetScorePhotosOptions
+): Promise<ScorePhoto[]> {
+  let query = supabase
+    .from('score_photos')
+    .select('*')
+    .eq('event_id', options.eventId)
+    .order('uploaded_at', { ascending: false })
+
+  if (options.station) {
+    query = query.eq('station', options.station)
+  }
+
+  if (options.athleteId) {
+    query = query.eq('athlete_id', options.athleteId)
+  }
+
+  const result = await query as unknown as QueryResult<ScorePhoto[]>
+
+  if (result.error) throw result.error
+  return result.data || []
+}
+
+export async function getPhotoSignedUrl(
+  supabase: SupabaseClient,
+  storagePath: string
+): Promise<string | null> {
+  const { data } = await supabase.storage
+    .from('score-photos')
+    .createSignedUrl(storagePath, 3600)
+
+  return data?.signedUrl || null
+}
+
+export async function getScorePhotoCount(
+  supabase: SupabaseClient,
+  eventId: string
+): Promise<number> {
+  const { count, error } = await supabase
+    .from('score_photos')
+    .select('id', { count: 'exact', head: true })
+    .eq('event_id', eventId)
 
   if (error) throw error
   return count || 0
