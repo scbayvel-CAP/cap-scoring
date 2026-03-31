@@ -6,14 +6,12 @@ import { Athlete, AthleteInsert } from '@/lib/supabase/types'
 import { getHeatNumbers } from '@/lib/utils'
 
 interface AthleteFormState {
-  heatNumber: number
   bibNumber: string
   teamName: string
 }
 
 function getInitialFormState(athlete?: Athlete): AthleteFormState {
   return {
-    heatNumber: athlete?.heat_number || 1,
     bibNumber: athlete?.bib_number || '',
     teamName: athlete?.first_name || athlete?.team_name || '',
   }
@@ -43,26 +41,33 @@ export function AthleteForm({ eventId, athlete, onSave, onCancel }: AthleteFormP
     setLoading(true)
 
     try {
-      const data: AthleteInsert = {
-        event_id: eventId,
-        race_type: 'singles', // DB compat — always 'singles' for team format
-        heat_number: form.heatNumber,
-        bib_number: form.bibNumber,
-        first_name: form.teamName, // Store team name in first_name
-        last_name: null,
-        gender: null,
-        age_category: null,
-        team_name: null,
-      }
-
       if (athlete) {
+        // Editing: update all records with this bib_number in the event
         const { error } = await supabase
           .from('athletes')
-          .update(data as never)
-          .eq('id', athlete.id)
+          .update({
+            bib_number: form.bibNumber,
+            first_name: form.teamName,
+          } as never)
+          .eq('event_id', eventId)
+          .eq('bib_number', athlete.bib_number)
         if (error) throw error
       } else {
-        const { error } = await supabase.from('athletes').insert(data as never)
+        // Creating: insert 6 records (one per hour) with the same bib_number
+        const hours = getHeatNumbers()
+        const records: AthleteInsert[] = hours.map((hour) => ({
+          event_id: eventId,
+          race_type: 'singles' as const,
+          heat_number: hour,
+          bib_number: form.bibNumber,
+          first_name: form.teamName,
+          last_name: null,
+          gender: null,
+          age_category: null,
+          team_name: null,
+        }))
+
+        const { error } = await supabase.from('athletes').insert(records as never)
         if (error) throw error
       }
 
@@ -82,32 +87,20 @@ export function AthleteForm({ eventId, athlete, onSave, onCancel }: AthleteFormP
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="label">Hour *</label>
-          <select
-            value={form.heatNumber}
-            onChange={(e) => updateForm('heatNumber', Number(e.target.value))}
-            className="select"
-          >
-            {getHeatNumbers().map((h) => (
-              <option key={h} value={h}>
-                Hour {h}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label">Bib Number *</label>
-          <input
-            type="text"
-            value={form.bibNumber}
-            onChange={(e) => updateForm('bibNumber', e.target.value)}
-            className="input"
-            placeholder="101"
-            required
-          />
-        </div>
+      <div>
+        <label className="label">Bib Number *</label>
+        <input
+          type="text"
+          value={form.bibNumber}
+          onChange={(e) => updateForm('bibNumber', e.target.value)}
+          className="input"
+          placeholder="101"
+          required
+          disabled={!!athlete}
+        />
+        {athlete && (
+          <p className="text-xs text-battleship mt-1">Bib number cannot be changed after creation</p>
+        )}
       </div>
 
       <div>

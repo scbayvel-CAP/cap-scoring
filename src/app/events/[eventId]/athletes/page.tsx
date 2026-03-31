@@ -57,7 +57,19 @@ export default function AthletesPage() {
       return
     }
 
-    await deleteAthlete(athleteId)
+    // Find the athlete to get the bib_number, then delete all records with that bib
+    const athlete = athletes.find(a => a.id === athleteId)
+    if (athlete) {
+      const supabase = (await import('@/lib/supabase/client')).createClient()
+      await supabase
+        .from('athletes')
+        .delete()
+        .eq('event_id', eventId)
+        .eq('bib_number', athlete.bib_number)
+      refresh()
+    } else {
+      await deleteAthlete(athleteId)
+    }
   }
 
   const handleCancel = () => {
@@ -65,12 +77,19 @@ export default function AthletesPage() {
     setEditingAthlete(undefined)
   }
 
-  const filteredAthletes = athletes.filter((athlete) => {
-    if (filterHeat !== 'all' && athlete.heat_number !== filterHeat) {
-      return false
-    }
-    return true
-  })
+  // Deduplicate athletes by bib_number — show one entry per team
+  const uniqueTeams = (() => {
+    const seen = new Set<string>()
+    return athletes.filter((athlete) => {
+      if (seen.has(athlete.bib_number)) return false
+      seen.add(athlete.bib_number)
+      return true
+    })
+  })()
+
+  const filteredAthletes = filterHeat === 'all'
+    ? uniqueTeams
+    : athletes.filter((athlete) => athlete.heat_number === filterHeat)
 
   if (loading || roleLoading) {
     return (
@@ -178,7 +197,10 @@ export default function AthletesPage() {
         </div>
 
         <div className="text-sm text-gray-500 mb-4">
-          Showing {filteredAthletes.length} of {athletes.length} team records
+          {filterHeat === 'all'
+            ? `${uniqueTeams.length} team${uniqueTeams.length !== 1 ? 's' : ''}`
+            : `Showing ${filteredAthletes.length} record${filteredAthletes.length !== 1 ? 's' : ''} for Hour ${filterHeat}`
+          }
         </div>
 
         <AthleteList

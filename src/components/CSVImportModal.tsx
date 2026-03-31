@@ -4,23 +4,10 @@ import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { bulkInsertAthletes } from '@/lib/supabase/queries'
 import { AthleteInsert } from '@/lib/supabase/types'
-import {
-  SinglesCSVRow,
-  DoublesCSVRow,
-  ValidationError,
-} from '@/lib/csv/types'
-import {
-  parseCSV,
-  detectRaceType,
-  parseSinglesCSV,
-  parseDoublesCSV,
-  generateSinglesTemplate,
-  generateDoublesTemplate,
-} from '@/lib/csv/parser'
-import {
-  validateSinglesCSV,
-  validateDoublesCSV,
-} from '@/lib/csv/validator'
+import { TeamCSVRow, ValidationError } from '@/lib/csv/types'
+import { parseCSV, parseTeamCSV, generateTeamTemplate } from '@/lib/csv/parser'
+import { validateTeamCSV } from '@/lib/csv/validator'
+import { getHeatNumbers } from '@/lib/utils'
 
 type ImportStep = 'upload' | 'preview' | 'importing' | 'complete'
 
@@ -39,9 +26,7 @@ export default function CSVImportModal({
 }: CSVImportModalProps) {
   const [step, setStep] = useState<ImportStep>('upload')
   const [error, setError] = useState<string | null>(null)
-  const [raceType, setRaceType] = useState<'singles' | 'doubles' | null>(null)
-  const [singlesRows, setSinglesRows] = useState<SinglesCSVRow[]>([])
-  const [doublesRows, setDoublesRows] = useState<DoublesCSVRow[]>([])
+  const [teamRows, setTeamRows] = useState<TeamCSVRow[]>([])
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
   const [importResult, setImportResult] = useState<{
     successCount: number
@@ -73,39 +58,31 @@ export default function CSVImportModal({
       return
     }
 
-    const detectedType = detectRaceType(rows[0])
-    if (!detectedType) {
+    const normalizedHeaders = rows[0].map((h) => h.toLowerCase().trim())
+    const hasBibNumber = normalizedHeaders.includes('bib_number')
+    const hasTeamName = normalizedHeaders.includes('team_name')
+
+    if (!hasBibNumber || !hasTeamName) {
       setError(
-        'Could not detect CSV format. Please ensure your CSV has the correct headers for singles or doubles.'
+        'CSV must have "bib_number" and "team_name" columns. Download the template for the correct format.'
       )
       return
     }
 
-    setRaceType(detectedType)
-
-    if (detectedType === 'singles') {
-      const parsed = parseSinglesCSV(content)
-      setSinglesRows(parsed)
-      const errors = validateSinglesCSV(parsed, existingBibs)
-      setValidationErrors(errors)
-    } else {
-      const parsed = parseDoublesCSV(content)
-      setDoublesRows(parsed)
-      const errors = validateDoublesCSV(parsed, existingBibs)
-      setValidationErrors(errors)
-    }
-
+    const parsed = parseTeamCSV(content)
+    setTeamRows(parsed)
+    const errors = validateTeamCSV(parsed, existingBibs)
+    setValidationErrors(errors)
     setStep('preview')
   }
 
-  const downloadTemplate = (type: 'singles' | 'doubles') => {
-    const content =
-      type === 'singles' ? generateSinglesTemplate() : generateDoublesTemplate()
+  const downloadTemplate = () => {
+    const content = generateTeamTemplate()
     const blob = new Blob([content], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${type}_template.csv`
+    a.download = 'team_template.csv'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -121,64 +98,29 @@ export default function CSVImportModal({
     try {
       const supabase = createClient()
       const athletesToInsert: AthleteInsert[] = []
+      const hours = getHeatNumbers()
 
-      if (raceType === 'singles') {
-        for (const row of singlesRows) {
+      // For each team, create 6 athlete records (one per hour)
+      for (const row of teamRows) {
+        for (const hour of hours) {
           athletesToInsert.push({
             event_id: eventId,
             race_type: 'singles',
             bib_number: row.bib_number.trim(),
-            heat_number: parseInt(row.heat_number, 10),
-            first_name: row.first_name.trim(),
-            last_name: row.last_name.trim(),
-            gender: row.gender.toLowerCase().trim() as 'male' | 'female',
-            age_category: row.age_category.trim(),
-            // Null out doubles fields
-            team_name: null,
-            partner1_first_name: null,
-            partner1_last_name: null,
-            partner1_gender: null,
-            partner2_first_name: null,
-            partner2_last_name: null,
-            partner2_gender: null,
-            doubles_category: null,
-          })
-        }
-      } else {
-        for (const row of doublesRows) {
-          athletesToInsert.push({
-            event_id: eventId,
-            race_type: 'doubles',
-            bib_number: row.bib_number.trim(),
-            heat_number: parseInt(row.heat_number, 10),
-            team_name: row.team_name.trim(),
-            doubles_category: row.doubles_category.toLowerCase().trim() as
-              | 'men'
-              | 'women'
-              | 'mixed',
-            partner1_first_name: row.partner1_first_name.trim(),
-            partner1_last_name: row.partner1_last_name.trim(),
-            partner1_gender: row.partner1_gender.toLowerCase().trim() as
-              | 'male'
-              | 'female',
-            partner2_first_name: row.partner2_first_name.trim(),
-            partner2_last_name: row.partner2_last_name.trim(),
-            partner2_gender: row.partner2_gender.toLowerCase().trim() as
-              | 'male'
-              | 'female',
-            // Null out singles fields
-            first_name: null,
+            heat_number: hour,
+            first_name: row.team_name.trim(),
             last_name: null,
             gender: null,
             age_category: null,
+            team_name: null,
           })
         }
       }
 
       const result = await bulkInsertAthletes(supabase, athletesToInsert)
       setImportResult({
-        successCount: result.successCount,
-        failureCount: result.failureCount,
+        successCount: Math.floor(result.successCount / hours.length), // Show team count
+        failureCount: result.failureCount > 0 ? Math.ceil(result.failureCount / hours.length) : 0,
       })
       setStep('complete')
     } catch (err) {
@@ -194,14 +136,14 @@ export default function CSVImportModal({
     onClose()
   }
 
-  const rowCount = raceType === 'singles' ? singlesRows.length : doublesRows.length
+  const rowCount = teamRows.length
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-eggshell flex items-center justify-between">
-          <h2 className="text-xl font-bold text-night-green">Import Athletes from CSV</h2>
+          <h2 className="text-xl font-bold text-night-green">Import Teams from CSV</h2>
           <button
             onClick={handleClose}
             className="text-battleship hover:text-night-green"
@@ -233,8 +175,8 @@ export default function CSVImportModal({
                   Upload CSV File
                 </h3>
                 <p className="text-battleship text-sm mb-4">
-                  Upload a CSV file with athlete data. The system will
-                  automatically detect if it&apos;s a singles or doubles format.
+                  Upload a CSV file with team data. Each team needs a bib number and team name.
+                  Teams will automatically be added to all 6 hours.
                 </p>
 
                 <input
@@ -282,7 +224,7 @@ export default function CSVImportModal({
                 </p>
                 <div className="flex gap-3">
                   <button
-                    onClick={() => downloadTemplate('singles')}
+                    onClick={downloadTemplate}
                     className="btn-secondary flex items-center gap-2"
                   >
                     <svg
@@ -298,26 +240,7 @@ export default function CSVImportModal({
                         d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    Singles Template
-                  </button>
-                  <button
-                    onClick={() => downloadTemplate('doubles')}
-                    className="btn-secondary flex items-center gap-2"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    Doubles Template
+                    Team Template
                   </button>
                 </div>
               </div>
@@ -333,19 +256,16 @@ export default function CSVImportModal({
                     Preview Import
                   </h3>
                   <p className="text-battleship text-sm">
-                    Detected format:{' '}
-                    <span className="font-medium capitalize">{raceType}</span>
+                    {rowCount} team{rowCount !== 1 ? 's' : ''} found
                     {' | '}
-                    {rowCount} row{rowCount !== 1 ? 's' : ''}
+                    {rowCount * 6} records will be created (6 hours per team)
                   </p>
                 </div>
                 <button
                   onClick={() => {
                     setStep('upload')
-                    setSinglesRows([])
-                    setDoublesRows([])
+                    setTeamRows([])
                     setValidationErrors([])
-                    setRaceType(null)
                     if (fileInputRef.current) {
                       fileInputRef.current.value = ''
                     }
@@ -394,71 +314,29 @@ export default function CSVImportModal({
               {/* Preview Table */}
               <div className="border border-eggshell rounded-lg overflow-hidden">
                 <div className="overflow-x-auto">
-                  {raceType === 'singles' ? (
-                    <table className="w-full text-sm">
-                      <thead className="bg-ivory">
-                        <tr>
-                          <th className="table-th">Bib</th>
-                          <th className="table-th">Heat</th>
-                          <th className="table-th">First Name</th>
-                          <th className="table-th">Last Name</th>
-                          <th className="table-th">Gender</th>
-                          <th className="table-th">Age Category</th>
+                  <table className="w-full text-sm">
+                    <thead className="bg-ivory">
+                      <tr>
+                        <th className="table-th">Bib</th>
+                        <th className="table-th">Team Name</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {teamRows.slice(0, 10).map((row, idx) => (
+                        <tr
+                          key={idx}
+                          className={idx % 2 === 0 ? 'bg-white' : 'bg-ivory/50'}
+                        >
+                          <td className="table-td">{row.bib_number}</td>
+                          <td className="table-td">{row.team_name}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {singlesRows.slice(0, 10).map((row, idx) => (
-                          <tr
-                            key={idx}
-                            className={idx % 2 === 0 ? 'bg-white' : 'bg-ivory/50'}
-                          >
-                            <td className="table-td">{row.bib_number}</td>
-                            <td className="table-td">{row.heat_number}</td>
-                            <td className="table-td">{row.first_name}</td>
-                            <td className="table-td">{row.last_name}</td>
-                            <td className="table-td">{row.gender}</td>
-                            <td className="table-td">{row.age_category}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <table className="w-full text-sm">
-                      <thead className="bg-ivory">
-                        <tr>
-                          <th className="table-th">Bib</th>
-                          <th className="table-th">Heat</th>
-                          <th className="table-th">Team Name</th>
-                          <th className="table-th">Category</th>
-                          <th className="table-th">Partner 1</th>
-                          <th className="table-th">Partner 2</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {doublesRows.slice(0, 10).map((row, idx) => (
-                          <tr
-                            key={idx}
-                            className={idx % 2 === 0 ? 'bg-white' : 'bg-ivory/50'}
-                          >
-                            <td className="table-td">{row.bib_number}</td>
-                            <td className="table-td">{row.heat_number}</td>
-                            <td className="table-td">{row.team_name}</td>
-                            <td className="table-td">{row.doubles_category}</td>
-                            <td className="table-td">
-                              {row.partner1_first_name} {row.partner1_last_name}
-                            </td>
-                            <td className="table-td">
-                              {row.partner2_first_name} {row.partner2_last_name}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
                 {rowCount > 10 && (
                   <div className="px-4 py-2 bg-ivory text-sm text-battleship border-t border-eggshell">
-                    Showing first 10 of {rowCount} rows
+                    Showing first 10 of {rowCount} teams
                   </div>
                 )}
               </div>
@@ -470,7 +348,7 @@ export default function CSVImportModal({
             <div className="flex flex-col items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-night-green border-t-transparent mb-4"></div>
               <p className="text-night-green font-medium">
-                Importing {rowCount} athlete{rowCount !== 1 ? 's' : ''}...
+                Importing {rowCount} team{rowCount !== 1 ? 's' : ''}...
               </p>
             </div>
           )}
@@ -499,8 +377,8 @@ export default function CSVImportModal({
                     Import Complete
                   </h3>
                   <p className="text-battleship">
-                    Successfully imported {importResult.successCount} athlete
-                    {importResult.successCount !== 1 ? 's' : ''}.
+                    Successfully imported {importResult.successCount} team
+                    {importResult.successCount !== 1 ? 's' : ''} across all 6 hours.
                   </p>
                 </>
               ) : (
@@ -524,12 +402,12 @@ export default function CSVImportModal({
                     Import Partially Complete
                   </h3>
                   <p className="text-battleship mb-2">
-                    {importResult.successCount} athlete
+                    {importResult.successCount} team
                     {importResult.successCount !== 1 ? 's' : ''} imported
                     successfully.
                   </p>
                   <p className="text-red-600">
-                    {importResult.failureCount} athlete
+                    {importResult.failureCount} team
                     {importResult.failureCount !== 1 ? 's' : ''} failed to
                     import.
                   </p>
@@ -557,7 +435,7 @@ export default function CSVImportModal({
                 disabled={validationErrors.length > 0}
                 className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Import {rowCount} Athlete{rowCount !== 1 ? 's' : ''}
+                Import {rowCount} Team{rowCount !== 1 ? 's' : ''}
               </button>
             </>
           )}
