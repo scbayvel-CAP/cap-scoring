@@ -3,8 +3,8 @@ export const STATION_RANGES = {
   1: { // Row
     name: 'Row',
     min: 0,
-    max: 12000,    // ~12km max on rowing machine per hour
-    typical: { min: 500, max: 6000 },
+    max: 60000,    // absolute max before warning of typo
+    typical: { min: 500, max: 30000 },
   },
 } as const
 
