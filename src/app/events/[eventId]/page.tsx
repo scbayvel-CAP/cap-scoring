@@ -29,19 +29,14 @@ export default async function EventPage({ params }: PageProps) {
   // Get athlete counts
   const { data: athletes } = await supabase
     .from('athletes')
-    .select('id, race_type, heat_number')
-    .eq('event_id', eventId) as unknown as { data: Pick<Athlete, 'id' | 'race_type' | 'heat_number'>[] | null }
+    .select('id, bib_number, heat_number')
+    .eq('event_id', eventId) as unknown as { data: Pick<Athlete, 'id' | 'bib_number' | 'heat_number'>[] | null }
 
-  const singlesCount = athletes?.filter(a => a.race_type === 'singles').length || 0
-  const doublesCount = athletes?.filter(a => a.race_type === 'doubles').length || 0
+  // Count unique teams (by bib_number)
+  const uniqueTeams = new Set(athletes?.map(a => a.bib_number)).size
 
-  // Get unique heat numbers
-  const singlesHeats = new Set(
-    athletes?.filter(a => a.race_type === 'singles').map(a => a.heat_number)
-  ).size
-  const doublesHeats = new Set(
-    athletes?.filter(a => a.race_type === 'doubles').map(a => a.heat_number)
-  ).size
+  // Get unique hours used
+  const hoursUsed = new Set(athletes?.map(a => a.heat_number)).size
 
   // Get score counts
   const { count: scoresCount } = await supabase
@@ -77,21 +72,16 @@ export default async function EventPage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div className="card">
-            <h3 className="text-sm font-medium text-gray-500">Singles Athletes</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{singlesCount}</p>
-            <p className="text-sm text-gray-500">{singlesHeats} heats</p>
+            <h3 className="text-sm font-medium text-gray-500">Teams</h3>
+            <p className="text-3xl font-bold text-gray-900 mt-2">{uniqueTeams}</p>
+            <p className="text-sm text-gray-500">{hoursUsed} hours</p>
           </div>
           <div className="card">
-            <h3 className="text-sm font-medium text-gray-500">Doubles Teams</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">{doublesCount}</p>
-            <p className="text-sm text-gray-500">{doublesHeats} heats</p>
-          </div>
-          <div className="card">
-            <h3 className="text-sm font-medium text-gray-500">Total Participants</h3>
+            <h3 className="text-sm font-medium text-gray-500">Athlete Records</h3>
             <p className="text-3xl font-bold text-gray-900 mt-2">
-              {singlesCount + doublesCount}
+              {athletes?.length || 0}
             </p>
           </div>
           <div className="card">
@@ -106,9 +96,9 @@ export default async function EventPage({ params }: PageProps) {
               href={`/events/${event.id}/athletes`}
               className="card hover:shadow-md transition-shadow"
             >
-              <h2 className="text-lg font-semibold text-gray-900">Manage Athletes</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Manage Teams</h2>
               <p className="text-sm text-gray-500 mt-1">
-                Add, edit, and assign athletes to heats
+                Add, edit, and assign teams to hours
               </p>
             </Link>
           )}
@@ -118,7 +108,7 @@ export default async function EventPage({ params }: PageProps) {
           >
             <h2 className="text-lg font-semibold text-gray-900">Enter Scores</h2>
             <p className="text-sm text-gray-500 mt-1">
-              Record distances for each station
+              Record rowing distances for each hour
             </p>
           </Link>
           <Link

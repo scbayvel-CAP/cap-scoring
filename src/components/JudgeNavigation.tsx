@@ -2,14 +2,14 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { CAPLogo } from '@/components/CAPLogo'
 
 interface JudgeNavigationProps {
   eventName?: string
-  stationName?: string
   showBackToEvents?: boolean
 }
 
-export function JudgeNavigation({ eventName, stationName, showBackToEvents }: JudgeNavigationProps) {
+export function JudgeNavigation({ eventName, showBackToEvents }: JudgeNavigationProps) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -39,9 +39,7 @@ export function JudgeNavigation({ eventName, stationName, showBackToEvents }: Ju
                 <span className="font-mono text-sm uppercase tracking-wider">Events</span>
               </button>
             ) : (
-              <span className="font-mono font-light text-xl text-chalk tracking-wider">
-                <span className="text-olive">{'////'}</span>CAP
-              </span>
+              <CAPLogo textColor="#FFFFF9" height={22} />
             )}
             {eventName && (
               <>
@@ -51,11 +49,6 @@ export function JudgeNavigation({ eventName, stationName, showBackToEvents }: Ju
             )}
           </div>
           <div className="flex items-center space-x-4">
-            {stationName && (
-              <span className="text-sm font-mono px-3 py-1 rounded-full bg-olive/30 text-chalk uppercase tracking-wider">
-                {stationName}
-              </span>
-            )}
             <button
               onClick={handleSignOut}
               className="text-sm text-eggshell hover:text-chalk font-mono uppercase tracking-wider"

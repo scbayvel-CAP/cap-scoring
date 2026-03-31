@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { CAPLogo } from '@/components/CAPLogo'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -37,8 +38,8 @@ export default function LoginPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-ivory">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <Link href="/" className="font-mono font-light text-3xl text-night-green tracking-wider">
-            <span className="text-olive">{'////'}</span>CAP
+          <Link href="/">
+            <CAPLogo textColor="#303029" height={32} />
           </Link>
           <p className="text-battleship mt-2 font-mono text-xs uppercase tracking-wider">
             Sign in to your account

@@ -32,7 +32,6 @@ export default function AthletesPage() {
   const [qrAthlete, setQrAthlete] = useState<Athlete | undefined>()
   const [showImportModal, setShowImportModal] = useState(false)
 
-  const [filterRaceType, setFilterRaceType] = useState<'all' | 'singles' | 'doubles'>('all')
   const [filterHeat, setFilterHeat] = useState<number | 'all'>('all')
 
   // Redirect judges to event overview
@@ -54,7 +53,7 @@ export default function AthletesPage() {
   }
 
   const handleDelete = async (athleteId: string) => {
-    if (!confirm('Are you sure you want to delete this athlete? All their scores will also be deleted.')) {
+    if (!confirm('Are you sure you want to delete this team? All their scores will also be deleted.')) {
       return
     }
 
@@ -67,9 +66,6 @@ export default function AthletesPage() {
   }
 
   const filteredAthletes = athletes.filter((athlete) => {
-    if (filterRaceType !== 'all' && athlete.race_type !== filterRaceType) {
-      return false
-    }
     if (filterHeat !== 'all' && athlete.heat_number !== filterHeat) {
       return false
     }
@@ -91,10 +87,6 @@ export default function AthletesPage() {
 
           <div className="card mb-6">
             <div className="flex flex-wrap gap-4">
-              <div>
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-10 w-32" />
-              </div>
               <div>
                 <Skeleton className="h-4 w-12 mb-2" />
                 <Skeleton className="h-10 w-32" />
@@ -119,7 +111,7 @@ export default function AthletesPage() {
       <PageErrorBoundary pageName="Athletes">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Athletes</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Teams</h1>
           <div className="flex gap-3">
             <button
               onClick={() => setShowImportModal(true)}
@@ -144,7 +136,7 @@ export default function AthletesPage() {
               onClick={() => setShowForm(true)}
               className="btn-primary"
             >
-              Add Athlete
+              Add Team
             </button>
           </div>
         </div>
@@ -153,7 +145,7 @@ export default function AthletesPage() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
               <h2 className="text-xl font-bold text-gray-900 mb-6">
-                {editingAthlete ? 'Edit Athlete' : 'Add Athlete'}
+                {editingAthlete ? 'Edit Team' : 'Add Team'}
               </h2>
               <AthleteForm
                 eventId={eventId}
@@ -168,28 +160,16 @@ export default function AthletesPage() {
         <div className="card mb-6">
           <div className="flex flex-wrap gap-4">
             <div>
-              <label className="label">Race Type</label>
-              <select
-                value={filterRaceType}
-                onChange={(e) => setFilterRaceType(e.target.value as 'all' | 'singles' | 'doubles')}
-                className="select"
-              >
-                <option value="all">All Types</option>
-                <option value="singles">Singles</option>
-                <option value="doubles">Doubles</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Heat</label>
+              <label className="label">Hour</label>
               <select
                 value={filterHeat}
                 onChange={(e) => setFilterHeat(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                 className="select"
               >
-                <option value="all">All Heats</option>
+                <option value="all">All Hours</option>
                 {getHeatNumbers().map((h) => (
                   <option key={h} value={h}>
-                    Heat {h}
+                    Hour {h}
                   </option>
                 ))}
               </select>
@@ -198,7 +178,7 @@ export default function AthletesPage() {
         </div>
 
         <div className="text-sm text-gray-500 mb-4">
-          Showing {filteredAthletes.length} of {athletes.length} athletes
+          Showing {filteredAthletes.length} of {athletes.length} team records
         </div>
 
         <AthleteList

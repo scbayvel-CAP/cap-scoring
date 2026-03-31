@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useRole } from '@/hooks/useRole'
+import { CAPLogo } from '@/components/CAPLogo'
 
 interface NavigationProps {
   eventId?: string
@@ -26,8 +27,8 @@ export function Navigation({ eventId, eventName }: NavigationProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="font-mono font-light text-xl text-chalk tracking-wider">
-              <span className="text-olive">{'////'}</span>CAP
+            <Link href="/dashboard">
+              <CAPLogo textColor="#FFFFF9" height={22} />
             </Link>
             {eventName && (
               <>

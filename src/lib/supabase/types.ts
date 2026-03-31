@@ -351,25 +351,7 @@ export type AthleteWithScores = Athlete & {
   scores: Score[]
 }
 
-// Station names mapping
+// Station names mapping (Row only for team format)
 export const STATIONS = {
-  1: 'Run',
-  2: 'Row',
-  3: 'Bike',
-  4: 'Ski',
+  1: 'Row',
 } as const
-
-export const AGE_CATEGORIES = [
-  '18-24',
-  '25-29',
-  '30-34',
-  '35-39',
-  '40-44',
-  '45-49',
-  '50-54',
-  '55-59',
-  '60-64',
-  '65+',
-] as const
-
-export type AgeCategory = typeof AGE_CATEGORIES[number]

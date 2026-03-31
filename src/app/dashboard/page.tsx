@@ -4,14 +4,12 @@ import { JudgeNavigation } from '@/components/JudgeNavigation'
 import Link from 'next/link'
 import { Event } from '@/lib/supabase/types'
 import { getUserRole } from '@/lib/auth/role'
-import { getStationName } from '@/lib/utils'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const userRole = await getUserRole()
   const isAdmin = userRole?.role === 'admin'
   const isJudge = userRole?.role === 'judge'
-  const assignedStation = userRole?.assignedStation
 
   const { data: events, error } = await supabase
     .from('events')
@@ -49,15 +47,10 @@ export default async function DashboardPage() {
   if (isJudge) {
     return (
       <div className="min-h-screen bg-ivory">
-        <JudgeNavigation stationName={assignedStation ? getStationName(assignedStation) : undefined} />
+        <JudgeNavigation />
         <main className="max-w-lg mx-auto px-4 py-8">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-night-green mb-2">Select Event</h1>
-            {assignedStation && (
-              <p className="text-battleship">
-                You are assigned to <span className="font-semibold text-night-green">{getStationName(assignedStation)}</span>
-              </p>
-            )}
           </div>
 
           {error && (

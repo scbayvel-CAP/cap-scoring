@@ -1,26 +1,25 @@
-import { AGE_CATEGORIES } from '@/lib/supabase/types'
 import {
   SinglesCSVRow,
   DoublesCSVRow,
+  TeamCSVRow,
   ValidationError,
 } from './types'
 
 const VALID_GENDERS = ['male', 'female']
 const VALID_DOUBLES_CATEGORIES = ['men', 'women', 'mixed']
 const MIN_HEAT = 1
-const MAX_HEAT = 12
+const MAX_HEAT = 6
 
 /**
- * Validate a singles CSV row
+ * Validate a team CSV row (new format)
  */
-export function validateSinglesRow(
-  row: SinglesCSVRow,
+export function validateTeamRow(
+  row: TeamCSVRow,
   rowIndex: number
 ): ValidationError[] {
   const errors: ValidationError[] = []
-  const rowNum = rowIndex + 2 // +2 for 1-indexed + header row
+  const rowNum = rowIndex + 2
 
-  // Bib number - required
   if (!row.bib_number || row.bib_number.trim() === '') {
     errors.push({
       row: rowNum,
@@ -29,24 +28,51 @@ export function validateSinglesRow(
     })
   }
 
-  // Heat number - required, 1-12
+  if (!row.team_name || row.team_name.trim() === '') {
+    errors.push({
+      row: rowNum,
+      field: 'team_name',
+      message: 'Team name is required',
+    })
+  }
+
+  return errors
+}
+
+/**
+ * Validate a singles CSV row (legacy)
+ */
+export function validateSinglesRow(
+  row: SinglesCSVRow,
+  rowIndex: number
+): ValidationError[] {
+  const errors: ValidationError[] = []
+  const rowNum = rowIndex + 2
+
+  if (!row.bib_number || row.bib_number.trim() === '') {
+    errors.push({
+      row: rowNum,
+      field: 'bib_number',
+      message: 'Bib number is required',
+    })
+  }
+
   const heatNum = parseInt(row.heat_number, 10)
   if (!row.heat_number || row.heat_number.trim() === '') {
     errors.push({
       row: rowNum,
       field: 'heat_number',
-      message: 'Heat number is required',
+      message: 'Hour number is required',
     })
   } else if (isNaN(heatNum) || heatNum < MIN_HEAT || heatNum > MAX_HEAT) {
     errors.push({
       row: rowNum,
       field: 'heat_number',
-      message: `Heat number must be between ${MIN_HEAT} and ${MAX_HEAT}`,
+      message: `Hour number must be between ${MIN_HEAT} and ${MAX_HEAT}`,
       value: row.heat_number,
     })
   }
 
-  // First name - required
   if (!row.first_name || row.first_name.trim() === '') {
     errors.push({
       row: rowNum,
@@ -55,7 +81,6 @@ export function validateSinglesRow(
     })
   }
 
-  // Last name - required
   if (!row.last_name || row.last_name.trim() === '') {
     errors.push({
       row: rowNum,
@@ -64,7 +89,6 @@ export function validateSinglesRow(
     })
   }
 
-  // Gender - required, must be male/female
   const normalizedGender = row.gender?.toLowerCase().trim()
   if (!row.gender || row.gender.trim() === '') {
     errors.push({
@@ -81,36 +105,21 @@ export function validateSinglesRow(
     })
   }
 
-  // Age category - required, must match AGE_CATEGORIES
-  if (!row.age_category || row.age_category.trim() === '') {
-    errors.push({
-      row: rowNum,
-      field: 'age_category',
-      message: 'Age category is required',
-    })
-  } else if (!AGE_CATEGORIES.includes(row.age_category.trim() as any)) {
-    errors.push({
-      row: rowNum,
-      field: 'age_category',
-      message: `Invalid age category. Must be one of: ${AGE_CATEGORIES.join(', ')}`,
-      value: row.age_category,
-    })
-  }
-
+  // Age category - optional in team format
+  // Accept any value if provided
   return errors
 }
 
 /**
- * Validate a doubles CSV row
+ * Validate a doubles CSV row (legacy)
  */
 export function validateDoublesRow(
   row: DoublesCSVRow,
   rowIndex: number
 ): ValidationError[] {
   const errors: ValidationError[] = []
-  const rowNum = rowIndex + 2 // +2 for 1-indexed + header row
+  const rowNum = rowIndex + 2
 
-  // Bib number - required
   if (!row.bib_number || row.bib_number.trim() === '') {
     errors.push({
       row: rowNum,
@@ -119,24 +128,22 @@ export function validateDoublesRow(
     })
   }
 
-  // Heat number - required, 1-12
   const heatNum = parseInt(row.heat_number, 10)
   if (!row.heat_number || row.heat_number.trim() === '') {
     errors.push({
       row: rowNum,
       field: 'heat_number',
-      message: 'Heat number is required',
+      message: 'Hour number is required',
     })
   } else if (isNaN(heatNum) || heatNum < MIN_HEAT || heatNum > MAX_HEAT) {
     errors.push({
       row: rowNum,
       field: 'heat_number',
-      message: `Heat number must be between ${MIN_HEAT} and ${MAX_HEAT}`,
+      message: `Hour number must be between ${MIN_HEAT} and ${MAX_HEAT}`,
       value: row.heat_number,
     })
   }
 
-  // Team name - required
   if (!row.team_name || row.team_name.trim() === '') {
     errors.push({
       row: rowNum,
@@ -145,87 +152,33 @@ export function validateDoublesRow(
     })
   }
 
-  // Doubles category - required, must be men/women/mixed
   const normalizedCategory = row.doubles_category?.toLowerCase().trim()
   if (!row.doubles_category || row.doubles_category.trim() === '') {
     errors.push({
       row: rowNum,
       field: 'doubles_category',
-      message: 'Doubles category is required',
+      message: 'Category is required',
     })
   } else if (!VALID_DOUBLES_CATEGORIES.includes(normalizedCategory)) {
     errors.push({
       row: rowNum,
       field: 'doubles_category',
-      message: 'Doubles category must be "men", "women", or "mixed"',
+      message: 'Category must be "men", "women", or "mixed"',
       value: row.doubles_category,
     })
   }
 
-  // Partner 1 fields
   if (!row.partner1_first_name || row.partner1_first_name.trim() === '') {
-    errors.push({
-      row: rowNum,
-      field: 'partner1_first_name',
-      message: 'Partner 1 first name is required',
-    })
+    errors.push({ row: rowNum, field: 'partner1_first_name', message: 'Partner 1 first name is required' })
   }
-
   if (!row.partner1_last_name || row.partner1_last_name.trim() === '') {
-    errors.push({
-      row: rowNum,
-      field: 'partner1_last_name',
-      message: 'Partner 1 last name is required',
-    })
+    errors.push({ row: rowNum, field: 'partner1_last_name', message: 'Partner 1 last name is required' })
   }
-
-  const normalizedP1Gender = row.partner1_gender?.toLowerCase().trim()
-  if (!row.partner1_gender || row.partner1_gender.trim() === '') {
-    errors.push({
-      row: rowNum,
-      field: 'partner1_gender',
-      message: 'Partner 1 gender is required',
-    })
-  } else if (!VALID_GENDERS.includes(normalizedP1Gender)) {
-    errors.push({
-      row: rowNum,
-      field: 'partner1_gender',
-      message: 'Partner 1 gender must be "male" or "female"',
-      value: row.partner1_gender,
-    })
-  }
-
-  // Partner 2 fields
   if (!row.partner2_first_name || row.partner2_first_name.trim() === '') {
-    errors.push({
-      row: rowNum,
-      field: 'partner2_first_name',
-      message: 'Partner 2 first name is required',
-    })
+    errors.push({ row: rowNum, field: 'partner2_first_name', message: 'Partner 2 first name is required' })
   }
-
   if (!row.partner2_last_name || row.partner2_last_name.trim() === '') {
-    errors.push({
-      row: rowNum,
-      field: 'partner2_last_name',
-      message: 'Partner 2 last name is required',
-    })
-  }
-
-  const normalizedP2Gender = row.partner2_gender?.toLowerCase().trim()
-  if (!row.partner2_gender || row.partner2_gender.trim() === '') {
-    errors.push({
-      row: rowNum,
-      field: 'partner2_gender',
-      message: 'Partner 2 gender is required',
-    })
-  } else if (!VALID_GENDERS.includes(normalizedP2Gender)) {
-    errors.push({
-      row: rowNum,
-      field: 'partner2_gender',
-      message: 'Partner 2 gender must be "male" or "female"',
-      value: row.partner2_gender,
-    })
+    errors.push({ row: rowNum, field: 'partner2_last_name', message: 'Partner 2 last name is required' })
   }
 
   return errors
@@ -235,19 +188,18 @@ export function validateDoublesRow(
  * Check for duplicate bib numbers within the CSV and against existing athletes
  */
 export function checkDuplicateBibs(
-  rows: (SinglesCSVRow | DoublesCSVRow)[],
+  rows: (SinglesCSVRow | DoublesCSVRow | TeamCSVRow)[],
   existingBibs: Set<string>
 ): ValidationError[] {
   const errors: ValidationError[] = []
-  const seenBibs = new Map<string, number>() // bib -> first row number
+  const seenBibs = new Map<string, number>()
 
   rows.forEach((row, index) => {
     const bibNumber = row.bib_number?.trim()
-    if (!bibNumber) return // Skip empty bibs (handled by row validation)
+    if (!bibNumber) return
 
-    const rowNum = index + 2 // +2 for 1-indexed + header row
+    const rowNum = index + 2
 
-    // Check against existing athletes in event
     if (existingBibs.has(bibNumber)) {
       errors.push({
         row: rowNum,
@@ -257,7 +209,6 @@ export function checkDuplicateBibs(
       })
     }
 
-    // Check for duplicates within CSV
     const firstOccurrence = seenBibs.get(bibNumber)
     if (firstOccurrence !== undefined) {
       errors.push({
@@ -297,6 +248,20 @@ export function validateDoublesCSV(
 ): ValidationError[] {
   const rowErrors = rows.flatMap((row, index) =>
     validateDoublesRow(row, index)
+  )
+  const duplicateErrors = checkDuplicateBibs(rows, existingBibs)
+  return [...rowErrors, ...duplicateErrors]
+}
+
+/**
+ * Validate all team rows
+ */
+export function validateTeamCSV(
+  rows: TeamCSVRow[],
+  existingBibs: Set<string>
+): ValidationError[] {
+  const rowErrors = rows.flatMap((row, index) =>
+    validateTeamRow(row, index)
   )
   const duplicateErrors = checkDuplicateBibs(rows, existingBibs)
   return [...rowErrors, ...duplicateErrors]

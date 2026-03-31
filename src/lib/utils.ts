@@ -10,11 +10,24 @@ export function formatDistance(meters: number): string {
   return meters.toLocaleString() + 'm'
 }
 
+export function metersToPoints(meters: number): number {
+  return Math.floor(meters / 250)
+}
+
+export function formatPoints(points: number): string {
+  return `${points} pts`
+}
+
 export function getDisplayName(athlete: Athlete): string {
-  if (athlete.race_type === 'singles') {
-    return `${athlete.first_name} ${athlete.last_name}`
+  if (athlete.team_name) {
+    return athlete.team_name
   }
-  return athlete.team_name || 'Unnamed Team'
+  if (athlete.first_name) {
+    return athlete.last_name
+      ? `${athlete.first_name} ${athlete.last_name}`
+      : athlete.first_name
+  }
+  return 'Unnamed Team'
 }
 
 export function getStationName(station: number): string {
@@ -37,16 +50,17 @@ export function getScoreForStation(scores: Score[], station: number): Score | un
   return scores.find(s => s.station === station)
 }
 
-// Sort athletes by total distance (descending)
+// Sort athletes by total points (meters / 250, descending)
 export function sortByTotalDistance(
   athletes: Array<Athlete & { scores: Score[] }>
-): Array<Athlete & { scores: Score[]; totalDistance: number; rank: number }> {
+): Array<Athlete & { scores: Score[]; totalDistance: number; totalPoints: number; rank: number }> {
   const withTotals = athletes.map(athlete => ({
     ...athlete,
     totalDistance: calculateTotalDistance(athlete.scores),
+    totalPoints: metersToPoints(calculateTotalDistance(athlete.scores)),
   }))
 
-  withTotals.sort((a, b) => b.totalDistance - a.totalDistance)
+  withTotals.sort((a, b) => b.totalPoints - a.totalPoints)
 
   return withTotals.map((athlete, index) => ({
     ...athlete,
@@ -54,12 +68,12 @@ export function sortByTotalDistance(
   }))
 }
 
-// Generate a list of heats (1-12)
+// Generate a list of hours (1-6)
 export function getHeatNumbers(): number[] {
-  return Array.from({ length: 12 }, (_, i) => i + 1)
+  return Array.from({ length: 6 }, (_, i) => i + 1)
 }
 
-// Generate a list of stations (1-4)
+// Generate a list of stations (Row only = station 1)
 export function getStationNumbers(): number[] {
-  return [1, 2, 3, 4]
+  return [1]
 }

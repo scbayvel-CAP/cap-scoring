@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import { CAPLogo } from '@/components/CAPLogo'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -14,15 +15,13 @@ export default async function Home() {
     <main className="min-h-screen flex flex-col items-center justify-center px-4 bg-night-green">
       <div className="text-center max-w-lg">
         <div className="mb-8">
-          <h1 className="font-mono font-light text-6xl text-chalk tracking-wider mb-2">
-            <span className="text-olive">{'////'}</span>CAP
-          </h1>
-          <p className="font-mono text-xs text-battleship uppercase tracking-[0.3em]">
-            Time-Capped Endurance Racing
+          <CAPLogo textColor="#FFFFF9" height={56} />
+          <p className="font-mono text-xs text-battleship uppercase tracking-[0.3em] mt-4">
+            Team Endurance Racing
           </p>
         </div>
         <p className="text-lg text-eggshell mb-12">
-          Fixed blocks, clear rules, and measured performance.
+          Six hours. Row for distance. Every meter counts.
         </p>
         <div className="space-y-4">
           <Link

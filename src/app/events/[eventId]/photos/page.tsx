@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Navigation } from '@/components/Navigation'
 import { PhotoLightbox } from '@/components/PhotoLightbox'
 import { Skeleton } from '@/components/Skeleton'
-import { Event, Athlete, ScorePhoto, STATIONS } from '@/lib/supabase/types'
+import { Event, Athlete, ScorePhoto } from '@/lib/supabase/types'
 import { getDisplayName, getStationName } from '@/lib/utils'
 import { useRole } from '@/hooks/useRole'
 
@@ -22,7 +22,7 @@ export default function PhotoReviewPage() {
   const [event, setEvent] = useState<Event | null>(null)
   const [photos, setPhotos] = useState<PhotoWithAthlete[]>([])
   const [loading, setLoading] = useState(true)
-  const [filterStation, setFilterStation] = useState<number | null>(null)
+  const [filterStation] = useState<number | null>(1)
   const [filterHeat, setFilterHeat] = useState<string | null>(null)
   const [lightboxPhoto, setLightboxPhoto] = useState<PhotoWithAthlete | null>(null)
 
@@ -137,32 +137,17 @@ export default function PhotoReviewPage() {
 
         {/* Filters */}
         <div className="flex flex-wrap gap-4 mb-6">
-          {/* Station filter */}
+          {/* Hour filter */}
           <div>
-            <label className="block text-sm font-medium text-battleship mb-1">Station</label>
-            <select
-              value={filterStation || ''}
-              onChange={(e) => setFilterStation(e.target.value ? parseInt(e.target.value) : null)}
-              className="input"
-            >
-              <option value="">All Stations</option>
-              {Object.entries(STATIONS).map(([num, name]) => (
-                <option key={num} value={num}>{name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Heat filter */}
-          <div>
-            <label className="block text-sm font-medium text-battleship mb-1">Heat</label>
+            <label className="block text-sm font-medium text-battleship mb-1">Hour</label>
             <select
               value={filterHeat || ''}
               onChange={(e) => setFilterHeat(e.target.value || null)}
               className="input"
             >
-              <option value="">All Heats</option>
-              {Array.from({ length: 12 }, (_, i) => i + 1).map(h => (
-                <option key={h} value={h}>Heat {h}</option>
+              <option value="">All Hours</option>
+              {Array.from({ length: 6 }, (_, i) => i + 1).map(h => (
+                <option key={h} value={h}>Hour {h}</option>
               ))}
             </select>
           </div>
@@ -230,7 +215,7 @@ export default function PhotoReviewPage() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-battleship">
-                      <span>Heat {String(meta?.heat_number ?? '?')}</span>
+                      <span>Hour {String(meta?.heat_number ?? '?')}</span>
                       <span>{new Date(photo.uploaded_at).toLocaleTimeString()}</span>
                     </div>
                   </div>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { Athlete, Score } from '@/lib/supabase/types'
-import { getDisplayName, getScoreForStation } from '@/lib/utils'
+import { getDisplayName, getScoreForStation, metersToPoints } from '@/lib/utils'
 import { PhotoCapture, PhotoCaptureState, PhotoResult } from './PhotoCapture'
 
 type CardStatus = 'empty' | 'editing' | 'saved' | 'changed'
@@ -186,6 +186,13 @@ export function ScoreEntry({
           m
         </span>
       </div>
+
+      {/* Points display */}
+      {value && parseInt(value, 10) > 0 && (
+        <p className="text-sm text-olive font-medium mt-1.5 text-right">
+          = {metersToPoints(parseInt(value, 10))} pts
+        </p>
+      )}
 
       {/* Hint when input is disabled waiting for photo */}
       {inputDisabled && (

@@ -193,11 +193,8 @@ export default function AuditLogPage() {
                 }}
                 className="input w-40"
               >
-                <option value="">All Stations</option>
-                <option value="1">Station 1 (Run)</option>
-                <option value="2">Station 2 (Row)</option>
-                <option value="3">Station 3 (Bike)</option>
-                <option value="4">Station 4 (Ski)</option>
+                <option value="">All</option>
+                <option value="1">Row</option>
               </select>
             </div>
             <div className="flex-1" />

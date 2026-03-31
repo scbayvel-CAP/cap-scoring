@@ -1,32 +1,10 @@
-import { STATIONS } from '@/lib/supabase/types'
-
-// Distance range configuration per station (in meters)
-// These are sensible defaults for a time-capped endurance event
-// Adjust based on your specific event format
+// Distance range configuration for Row station (in meters)
 export const STATION_RANGES = {
-  1: { // Run
-    name: 'Run',
-    min: 500,      // Minimum realistic distance
-    max: 15000,    // ~15km max for a time block
-    typical: { min: 2000, max: 10000 }, // Typical range
-  },
-  2: { // Row
+  1: { // Row
     name: 'Row',
-    min: 500,
-    max: 12000,    // ~12km max on rowing machine
-    typical: { min: 1500, max: 8000 },
-  },
-  3: { // Bike
-    name: 'Bike',
-    min: 1000,
-    max: 30000,    // ~30km max for cycling
-    typical: { min: 5000, max: 20000 },
-  },
-  4: { // Ski
-    name: 'Ski',
-    min: 500,
-    max: 12000,    // ~12km max on ski erg
-    typical: { min: 1500, max: 8000 },
+    min: 0,
+    max: 12000,    // ~12km max on rowing machine per hour
+    typical: { min: 500, max: 6000 },
   },
 } as const
 
@@ -54,16 +32,6 @@ export function validateDistance(
     return {
       level: 'error',
       message: `Distance must be greater than 0`,
-      value: distance,
-      station,
-    }
-  }
-
-  // Below absolute minimum - likely a typo (missing digits)
-  if (distance < range.min) {
-    return {
-      level: 'warning',
-      message: `${distance}m seems very low for ${range.name}. Did you mean ${distance * 10}m or ${distance * 100}m?`,
       value: distance,
       station,
     }

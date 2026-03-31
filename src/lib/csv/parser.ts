@@ -1,8 +1,10 @@
 import {
   SinglesCSVRow,
   DoublesCSVRow,
+  TeamCSVRow,
   SINGLES_HEADERS,
   DOUBLES_HEADERS,
+  TEAM_HEADERS,
 } from './types'
 
 /**
@@ -53,8 +55,11 @@ export function detectRaceType(
 ): 'singles' | 'doubles' | null {
   const normalizedHeaders = headers.map((h) => h.toLowerCase().trim())
 
-  // Check for doubles-specific headers
+  // Check for team format (new simplified format)
+  const hasBibNumber = normalizedHeaders.includes('bib_number')
   const hasTeamName = normalizedHeaders.includes('team_name')
+
+  // Check for doubles-specific headers
   const hasDoublesCategory = normalizedHeaders.includes('doubles_category')
   const hasPartner1 = normalizedHeaders.includes('partner1_first_name')
 
@@ -69,6 +74,11 @@ export function detectRaceType(
   const hasAgeCategory = normalizedHeaders.includes('age_category')
 
   if (hasFirstName && hasLastName && hasGender && hasAgeCategory) {
+    return 'singles'
+  }
+
+  // New team format: just bib_number + team_name → treat as singles
+  if (hasBibNumber && hasTeamName) {
     return 'singles'
   }
 
@@ -99,7 +109,26 @@ function getValue(
 }
 
 /**
- * Parse CSV string into singles rows
+ * Parse CSV string into team rows (new format)
+ */
+export function parseTeamCSV(csvString: string): TeamCSVRow[] {
+  const rows = parseCSV(csvString)
+  if (rows.length < 2) return []
+
+  const headers = rows[0]
+  const headerMap = createHeaderMap(headers)
+  const dataRows = rows.slice(1)
+
+  return dataRows
+    .filter((row) => row.some((cell) => cell.trim() !== ''))
+    .map((row) => ({
+      bib_number: getValue(row, headerMap, 'bib_number'),
+      team_name: getValue(row, headerMap, 'team_name'),
+    }))
+}
+
+/**
+ * Parse CSV string into singles rows (legacy)
  */
 export function parseSinglesCSV(csvString: string): SinglesCSVRow[] {
   const rows = parseCSV(csvString)
@@ -122,7 +151,7 @@ export function parseSinglesCSV(csvString: string): SinglesCSVRow[] {
 }
 
 /**
- * Parse CSV string into doubles rows
+ * Parse CSV string into doubles rows (legacy)
  */
 export function parseDoublesCSV(csvString: string): DoublesCSVRow[] {
   const rows = parseCSV(csvString)
@@ -149,7 +178,16 @@ export function parseDoublesCSV(csvString: string): DoublesCSVRow[] {
 }
 
 /**
- * Generate CSV template for singles
+ * Generate CSV template for teams
+ */
+export function generateTeamTemplate(): string {
+  const headers = TEAM_HEADERS.join(',')
+  const exampleRow = '101,Team Alpha'
+  return `${headers}\n${exampleRow}`
+}
+
+/**
+ * Generate CSV template for singles (legacy)
  */
 export function generateSinglesTemplate(): string {
   const headers = SINGLES_HEADERS.join(',')
@@ -158,7 +196,7 @@ export function generateSinglesTemplate(): string {
 }
 
 /**
- * Generate CSV template for doubles
+ * Generate CSV template for doubles (legacy)
  */
 export function generateDoublesTemplate(): string {
   const headers = DOUBLES_HEADERS.join(',')

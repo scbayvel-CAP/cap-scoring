@@ -5,13 +5,13 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 import { createClient } from '@/lib/supabase/client'
-import { Athlete, Event, Score, STATIONS, AthleteWithScores } from '@/lib/supabase/types'
+import { Event, AthleteWithScores } from '@/lib/supabase/types'
 import {
   getDisplayName,
+  metersToPoints,
+  formatPoints,
   formatDistance,
-  calculateTotalDistance,
-  getScoreForStation,
-  sortByTotalDistance,
+  getHeatNumbers,
 } from '@/lib/utils'
 
 export default function AthleteResultPage() {
@@ -20,8 +20,8 @@ export default function AthleteResultPage() {
   const athleteId = params.athleteId as string
 
   const [event, setEvent] = useState<Event | null>(null)
-  const [athlete, setAthlete] = useState<AthleteWithScores | null>(null)
-  const [allAthletes, setAllAthletes] = useState<AthleteWithScores[]>([])
+  const [teamAthletes, setTeamAthletes] = useState<AthleteWithScores[]>([])
+  const [allTeams, setAllTeams] = useState<AthleteWithScores[]>([])
   const [loading, setLoading] = useState(true)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
@@ -37,7 +37,7 @@ export default function AthleteResultPage() {
 
     if (eventData) setEvent(eventData)
 
-    // Load this athlete with their scores
+    // Load this athlete to get bib_number
     const { data: athleteData } = await supabase
       .from('athletes')
       .select('*, scores(*)')
@@ -45,28 +45,26 @@ export default function AthleteResultPage() {
       .single() as unknown as { data: AthleteWithScores | null }
 
     if (athleteData) {
-      setAthlete(athleteData)
-    }
-
-    // Load all athletes in same category for ranking
-    if (athleteData) {
-      let query = supabase
+      // Load all athlete records with this bib_number (one per hour)
+      const { data: teamData } = await supabase
         .from('athletes')
         .select('*, scores(*)')
         .eq('event_id', eventId)
-        .eq('race_type', athleteData.race_type)
+        .eq('bib_number', athleteData.bib_number)
+        .order('heat_number') as unknown as { data: AthleteWithScores[] | null }
 
-      if (athleteData.race_type === 'singles') {
-        if (athleteData.gender) query = query.eq('gender', athleteData.gender)
-        if (athleteData.age_category) query = query.eq('age_category', athleteData.age_category)
-      } else {
-        if (athleteData.doubles_category) query = query.eq('doubles_category', athleteData.doubles_category)
+      if (teamData) {
+        setTeamAthletes(teamData)
       }
 
-      const { data: allAthletesData } = await query as unknown as { data: AthleteWithScores[] | null }
+      // Load all athletes for ranking
+      const { data: allData } = await supabase
+        .from('athletes')
+        .select('*, scores(*)')
+        .eq('event_id', eventId) as unknown as { data: AthleteWithScores[] | null }
 
-      if (allAthletesData) {
-        setAllAthletes(allAthletesData)
+      if (allData) {
+        setAllTeams(allData)
       }
     }
 
@@ -100,10 +98,23 @@ export default function AthleteResultPage() {
     }
   }, [supabase, loadData])
 
-  // Calculate ranking
-  const rankedAthletes = sortByTotalDistance(allAthletes)
-  const currentRank = rankedAthletes.find((a) => a.id === athleteId)?.rank || 0
-  const totalInCategory = rankedAthletes.length
+  // Calculate ranking by grouping all athletes by bib
+  const calculateRanking = () => {
+    const bibMap = new Map<string, number>()
+    for (const a of allTeams) {
+      const score = a.scores.find(s => s.station === 1)
+      const meters = score?.distance_meters || 0
+      bibMap.set(a.bib_number, (bibMap.get(a.bib_number) || 0) + meters)
+    }
+
+    const sorted = Array.from(bibMap.entries())
+      .map(([bib, meters]) => ({ bib, points: metersToPoints(meters) }))
+      .sort((a, b) => b.points - a.points)
+
+    const currentBib = teamAthletes[0]?.bib_number
+    const rank = sorted.findIndex(t => t.bib === currentBib) + 1
+    return { rank, total: sorted.length }
+  }
 
   if (loading) {
     return (
@@ -117,12 +128,12 @@ export default function AthleteResultPage() {
     )
   }
 
-  if (!athlete || !event) {
+  if (teamAthletes.length === 0 || !event) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Athlete Not Found</h1>
-          <p className="text-gray-600 mb-4">The athlete you are looking for does not exist.</p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Team Not Found</h1>
+          <p className="text-gray-600 mb-4">The team you are looking for does not exist.</p>
           <Link href={`/live/${eventId}`} className="text-primary-600 hover:underline">
             Back to Leaderboard
           </Link>
@@ -131,7 +142,25 @@ export default function AthleteResultPage() {
     )
   }
 
-  const totalDistance = calculateTotalDistance(athlete.scores)
+  const hours = getHeatNumbers()
+  const teamName = getDisplayName(teamAthletes[0])
+  const bibNumber = teamAthletes[0].bib_number
+
+  // Build hour scores
+  const hourData = hours.map(h => {
+    const hourAthlete = teamAthletes.find(a => a.heat_number === h)
+    const score = hourAthlete?.scores.find(s => s.station === 1)
+    return {
+      hour: h,
+      meters: score?.distance_meters || 0,
+      points: metersToPoints(score?.distance_meters || 0),
+      hasScore: !!score,
+    }
+  })
+
+  const totalMeters = hourData.reduce((sum, h) => sum + h.meters, 0)
+  const totalPoints = metersToPoints(totalMeters)
+  const { rank: currentRank, total: totalTeams } = calculateRanking()
   const currentUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   return (
@@ -160,35 +189,17 @@ export default function AthleteResultPage() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        {/* Athlete Info Card */}
+        {/* Team Info Card */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-3xl font-bold text-gray-900">
-                  {getDisplayName(athlete)}
+                  {teamName}
                 </span>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-700">
-                  #{athlete.bib_number}
+                  #{bibNumber}
                 </span>
-              </div>
-              <div className="text-gray-600">
-                {athlete.race_type === 'singles' ? (
-                  <>
-                    <span className="capitalize">{athlete.gender}</span>
-                    <span className="mx-2">•</span>
-                    <span>{athlete.age_category}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="capitalize">{athlete.doubles_category} Doubles</span>
-                    <span className="mx-2">•</span>
-                    <span>
-                      {athlete.partner1_first_name} {athlete.partner1_last_name} &{' '}
-                      {athlete.partner2_first_name} {athlete.partner2_last_name}
-                    </span>
-                  </>
-                )}
               </div>
             </div>
 
@@ -208,42 +219,43 @@ export default function AthleteResultPage() {
                 #{currentRank}
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                of {totalInCategory} in category
+                of {totalTeams} teams
               </p>
             </div>
           </div>
         </div>
 
-        {/* Total Distance */}
+        {/* Total Points */}
         <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg shadow-sm p-6 mb-6 text-white">
-          <p className="text-primary-100 text-sm uppercase tracking-wide mb-1">Total Distance</p>
-          <p className="text-4xl sm:text-5xl font-bold">{formatDistance(totalDistance)}</p>
+          <p className="text-primary-100 text-sm uppercase tracking-wide mb-1">Total Points</p>
+          <p className="text-4xl sm:text-5xl font-bold">{formatPoints(totalPoints)}</p>
+          <p className="text-primary-200 text-sm mt-1">{formatDistance(totalMeters)} rowed</p>
         </div>
 
-        {/* Station Breakdown */}
+        {/* Hour Breakdown */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Station Breakdown</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {Object.entries(STATIONS).map(([num, name]) => {
-              const score = getScoreForStation(athlete.scores, parseInt(num))
-              return (
-                <div
-                  key={num}
-                  className={`rounded-lg p-4 text-center ${
-                    score ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-50 border-2 border-gray-200'
-                  }`}
-                >
-                  <p className="text-sm font-medium text-gray-600 mb-1">{name}</p>
-                  {score ? (
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Hour Breakdown</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            {hourData.map(({ hour, meters, points, hasScore }) => (
+              <div
+                key={hour}
+                className={`rounded-lg p-4 text-center ${
+                  hasScore ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-50 border-2 border-gray-200'
+                }`}
+              >
+                <p className="text-sm font-medium text-gray-600 mb-1">Hour {hour}</p>
+                {hasScore ? (
+                  <>
                     <p className="text-xl font-bold text-green-700">
-                      {formatDistance(score.distance_meters)}
+                      {formatPoints(points)}
                     </p>
-                  ) : (
-                    <p className="text-xl font-bold text-gray-400">--</p>
-                  )}
-                </div>
-              )
-            })}
+                    <p className="text-xs text-gray-500">{formatDistance(meters)}</p>
+                  </>
+                ) : (
+                  <p className="text-xl font-bold text-gray-400">--</p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
@@ -265,7 +277,6 @@ export default function AthleteResultPage() {
           </div>
         </div>
 
-        {/* Last Updated */}
         {lastUpdate && (
           <p className="text-center text-sm text-gray-500 mt-6">
             Last updated: {lastUpdate.toLocaleTimeString()}
@@ -273,7 +284,7 @@ export default function AthleteResultPage() {
         )}
 
         <footer className="mt-12 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
-          <p>CAP 55 Scoring System</p>
+          <p>CAP Scoring System</p>
         </footer>
       </main>
     </div>

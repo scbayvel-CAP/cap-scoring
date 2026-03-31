@@ -1,4 +1,10 @@
-// CSV row types for parsing
+// CSV row types for parsing (team format)
+export interface TeamCSVRow {
+  bib_number: string
+  team_name: string
+}
+
+// Legacy types kept for import compatibility
 export interface SinglesCSVRow {
   bib_number: string
   heat_number: string
@@ -47,7 +53,13 @@ export interface ImportResult {
   }>
 }
 
-// Expected headers for each CSV type
+// Team CSV headers (new format)
+export const TEAM_HEADERS = [
+  'bib_number',
+  'team_name',
+] as const
+
+// Legacy headers kept for import compatibility
 export const SINGLES_HEADERS = [
   'bib_number',
   'heat_number',
@@ -72,3 +84,4 @@ export const DOUBLES_HEADERS = [
 
 export type SinglesHeader = (typeof SINGLES_HEADERS)[number]
 export type DoublesHeader = (typeof DOUBLES_HEADERS)[number]
+export type TeamHeader = (typeof TEAM_HEADERS)[number]
