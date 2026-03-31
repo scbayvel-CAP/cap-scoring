@@ -77,17 +77,50 @@ export default function ScoringPage() {
 
       if (eventData) setEvent(eventData)
 
-      // Load athletes for this hour (race_type='singles' for DB compat)
-      const { data: athletesData } = await supabase
+      // Load ALL athletes for this event
+      const { data: allAthletes } = await supabase
         .from('athletes')
         .select('*')
         .eq('event_id', eventId)
         .eq('race_type', 'singles')
-        .eq('heat_number', heatNumber)
         .order('bib_number') as unknown as { data: Athlete[] | null }
 
-      if (athletesData) {
-        setAthletes(athletesData)
+      if (allAthletes && allAthletes.length > 0) {
+        // Get athletes for this hour
+        let hourAthletes = allAthletes.filter(a => a.heat_number === heatNumber)
+
+        // If no records exist for this hour, auto-create them from existing teams
+        if (hourAthletes.length === 0) {
+          // Get unique teams by bib_number
+          const seen = new Set<string>()
+          const uniqueTeams = allAthletes.filter(a => {
+            if (seen.has(a.bib_number)) return false
+            seen.add(a.bib_number)
+            return true
+          })
+
+          // Create missing hour records
+          const newRecords = uniqueTeams.map(team => ({
+            event_id: eventId,
+            race_type: 'singles' as const,
+            heat_number: heatNumber,
+            bib_number: team.bib_number,
+            first_name: team.first_name,
+            last_name: team.last_name,
+            gender: team.gender,
+            age_category: team.age_category,
+            team_name: team.team_name,
+          }))
+
+          const { data: inserted } = await supabase
+            .from('athletes')
+            .insert(newRecords as never)
+            .select() as unknown as { data: Athlete[] | null }
+
+          hourAthletes = inserted || []
+        }
+
+        setAthletes(hourAthletes)
       } else {
         setAthletes([])
       }
